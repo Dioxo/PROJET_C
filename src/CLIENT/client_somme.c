@@ -4,7 +4,7 @@
 
 #include "client_service.h"
 #include "client_somme.h"
-
+// Test
 
 /*----------------------------------------------*
  * fonctions appelables par le client
