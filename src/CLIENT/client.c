@@ -28,15 +28,21 @@ static void usage(const char *exeName, const char *message)
     exit(EXIT_FAILURE);
 }
 
-void sendData(Pair *pipes, int numService)
+
+
+
+
+
+void askConnexion(Pair *pipes, Connexion *c)
 {
-    clientWriteData(pipes, &numService, sizeof(int));
+    clientWriteData(pipes, &c, sizeof(struct Connexion));
 }
 
-void receiveResults(Pair *pipes)
+int establishedConnexion(Pair *pipes, Connexion *c)
 {
     int n;
-    m_readData(pipes, &n, sizeof(int));
+    clientReadData(pipes, &c, sizeof(struct Connexion));
+    retour c->code;
 }
 
 
@@ -51,21 +57,21 @@ int main(int argc, char * argv[])
     int numService = strtol(argv[1], NULL, 10);
 
     // initialisations diverses
-    getPipeFromOrchestra(); 
+    Pair fd = getPipes(numService);
+
     // entrée en section critique pour communiquer avec l'orchestre
-    pthread_mutex_lock(mutexcreerparlorchestre);
+    pthread_mutex_lock(getMutex(numService));
     // envoi à l'orchestre du numéro du service
-    sendtoOrchestra(int firstPipe, int numService);
+    askConnexion(Pair *pipes, Connexion *c);
+
     // attente code de retour
-    O_response  = waitResponseOrchestra();
+    response  = waitResponseOrchestra();
     // si code d'erreur
-    if (response == -1)
+    if (establishedConnexion() == -1)
     {
-        myassert(O_response == 0, O_response)
+        myassert(O_response == 0, response)
         //     sortie de la section critique
         pthread_mutex_unlock(response -> mutex);
-        
-
     }
     // sinon
     else

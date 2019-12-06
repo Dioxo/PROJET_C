@@ -6,8 +6,7 @@
 //   temps avec l'orchestre
 // - les deux tubes nommés pour la communication bidirectionnelle
 
-typedef struct
-{
+typedef struct {
     char *name;
     int fd;
 } NamedPipe;
@@ -17,14 +16,24 @@ typedef struct {
     NamedPipe OtoC;
 } Pair;
 
+typedef struct {
+    int code;     
+} Connexion;
+
+typedef struct {
+    char *password;
+    char *CtoO;
+    char *OtoC;
+} Response;
+
 /* ============================
  	Constructeur et Destructeur
    ============================   */ 
 
-void orchestraCreatePipes(int numPipe, int numService, Descriptors *pipes);
-void orchestraCreateThread(int numPipe, int numService, Descriptors *pipes);
+void orchestraCreatePipes(int numPipe, int numService, Pair *pipes);
+void orchestraCreateThread(int numPipe, int numService, Pair *pipes);
 
-void orchestraDestroyPipes(Descriptors *pipes);
+void orchestraDestroyPipes(Pair *pipes);
 
 /* =================================
  	Ouverture et fermeture des tubes
@@ -45,11 +54,20 @@ void clientReadData(Pair *pipes, void *buf, size_t size);
 void orchestraReadData(Pair *pipes, void *buf, size_t size);
 
 /* =================================
+ 		Attente d'une réponse
+   =================================  */ 
+
+int orchestraWaitResponse();
+int clientWaitResponse();
+
+/* =================================
 		Accesseur et mutateur
    =================================  */ 
 
-Pair getPipes();
-pthread_mutex_t getMutex();
+Pair getPipes(int numService);
+pthread_mutex_t getMutex(int numService);
+
+
 
 
 #endif
