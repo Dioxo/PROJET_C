@@ -4,7 +4,6 @@
 
 #include "client_service.h"
 #include "client_somme.h"
-// Test
 
 /*----------------------------------------------*
  * fonctions appelables par le client
@@ -15,6 +14,10 @@
 // - les tubes de communication
 // - argc et argv fournis au main
 // Cette fonction analyse argv et en déduit les données à envoyer
+
+
+
+
 void client_somme_sendData(/* tubes,*/ int argc, char * argv[])
 {
     // par exemple argv[2] et argv[3] contiennent les deux nombres
