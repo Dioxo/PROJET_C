@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+//FICHIER DE TEST======================================================
 int main(int argc, char *argv[]) {
   if (argc != 4)
     return -1;
