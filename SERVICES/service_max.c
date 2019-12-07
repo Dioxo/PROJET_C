@@ -1,6 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <assert.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <pthread.h>
 
 static void usage(const char *exeName, const char *message)
 {
@@ -16,6 +20,36 @@ static void usage(const char *exeName, const char *message)
 /*----------------------------------------------*
  * fonctions appelables par le service
  *----------------------------------------------*/
+//struct contenant le tab de float ,le pointeur mutex et le resultat
+typedef struct {
+  float *tab;
+  int taille;
+  float *res;
+  pthread_mutex_t *mutex;
+} ThreadData;
+
+
+void * codeThread(void * arg)
+{
+  ThreadData *data = (ThreadData *) arg;
+  float max = data->tab[0];
+
+  for (int i = 1; i < data->taille; i++) {
+    if (max < data->tab[i]) {
+      max = data->tab[i];
+    }
+  }
+
+  pthread_mutex_lock(data->mutex);
+
+  if ( *(data->res) < max ) {
+    *(data->res) = max;
+  }
+
+  pthread_mutex_unlock(data->mutex);
+
+  return NULL;
+}
 
 // fonction de réception des données
 void max_service_receiveDataData(/* tubes,*/ /* autre chose ? */)
@@ -42,6 +76,66 @@ int main(int argc, char * argv[])
         usage(argv[0], "nombre paramètres incorrect");
 
     // initialisations diverses
+    int taille = 10;
+    float tab[taille];
+    for (int i = 1; i < taille; i++) {
+      tab[i] = i;
+    }
+
+    int nbThreads = 1;
+    //initialiser les pthreads et mutex
+    pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+    pthread_t threads[nbThreads];
+    ThreadData datas[nbThreads];
+    float res = 0;
+    // pré-initialisation des données
+    for (int i = 0; i < nbThreads; i++)
+    {
+      // il faut initialiser datas[i] avec :
+      //   . un pointeur sur le tableau à evaluer
+      //   . la taille du tableau
+      //   . un pointeur sur la variable resultat
+      //   . le mutex partagé
+      datas[i].tab = tab;
+      datas[i].taille = taille;
+      datas[i].res = &res;
+      datas[i].mutex = &mutex;
+    }
+
+
+    // lancement des threads
+     for (int i = 0; i < nbThreads; i++)
+     {
+         // et donc on passe un pointeur sur une struct différente chaque fois
+         int ret = pthread_create(&(threads[i]), NULL, codeThread, &(datas[i]));
+         assert(ret == 0);
+     }
+
+     // attente de la fin des threads
+     for (int i = 0; i < nbThreads; i++)
+     {
+         int ret = pthread_join(threads[i], NULL);
+         assert(ret == 0);
+     }
+
+     //detruction mutex
+    pthread_mutex_destroy(&mutex);
+
+    printf("valeur max = %f\n", res);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     while (true)
     {
@@ -60,9 +154,10 @@ int main(int argc, char * argv[])
         //        envoi du résultat au client (une fct par service)
         //        attente de l'accusé de réception du client
         //    modification du sémaphore pour prévenir l'orchestre de la fin
+        break;
     }
 
     // libération éventuelle de ressources
-    
+
     return EXIT_SUCCESS;
 }
