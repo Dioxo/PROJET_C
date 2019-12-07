@@ -26,6 +26,9 @@ typedef struct {
   int taille;
   float *res;
   pthread_mutex_t *mutex;
+
+  int bInf; // borne inf à evaluer du thread
+  int bSup; // borne sup à evaluer du thread
 } ThreadData;
 
 
