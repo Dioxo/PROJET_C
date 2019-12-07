@@ -15,10 +15,12 @@ int main(int argc, char *argv[]) {
 
   int fd = open("c_s", O_WRONLY);
   int taille, mdp;
+  char *chaine = malloc(sizeof(argv[3]) + 1);
+  strcpy(chaine , argv[3]);
   mdp = atoi(argv[1]);
   taille = atoi(argv[2]);
   write(fd, &mdp, sizeof(int));
   write(fd, &taille, sizeof(int));
-  write(fd, argv[3], strlen(argv[3]));
+  write(fd, argv[3], strlen(argv[3]) + 1);
   return 0;
 }

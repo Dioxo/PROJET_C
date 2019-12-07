@@ -38,17 +38,19 @@ char * compression_service_receiveDataData(int r /* autre chose ? */)
   assert(taille != 0);
 
   char *chaine = malloc(taille + 1);
-  read(r, chaine, taille);
+  read(r, chaine, taille + 1);
 
   return chaine;
 }
 
 // fonction de traitement des données
-char * compression_service_computeResult(const char* chaine)
+char * compression_service_computeResult(char* chaine)
 {
   // taille de la chaine resultant = au pire de cas, 2 fois la taille de la chaine entrante
-  char *res = malloc(strlen(chaine) * 2);
-
+  int taille = (strlen(chaine) * 2) + 1;
+  char *res = malloc(taille);
+  //initialicer la chaine
+  res[0] = '\0';
   int cmpt = 0;
   unsigned int i = 0;
   for ( ; i < strlen(chaine); i++) {
@@ -57,13 +59,21 @@ char * compression_service_computeResult(const char* chaine)
       //pour le moment, je vais sur dimmensioner le tableau
       char tmp[3];
       sprintf(tmp, "%d%c", cmpt, chaine[i]);
-      strcat(res, tmp);
+      if (strlen(res) == 0) {
+        strcpy(res, tmp);
+      }else{
+        strcat(res, tmp);
+      }
       cmpt = 0;
     }
   }
+  //liberer chaine
+  free(chaine);
 
-  // reallouer la taille de la chaine à la taille final
-  res = (char *) realloc(res, strlen(res));
+  // finir la chaine par null-byte
+  res[strlen(res)] = '\0';
+  // reallouer la taille de res à la taille final
+  res = (char *) realloc(res, strlen(res) +1);
   return res;
 }
 
@@ -90,7 +100,7 @@ int main(int argc, char * argv[])
     // initialisations diverses
     int fd_orchestre= atoi(argv[2]);
     int fd_s_c,  fd_c_s;
-    char *chaine;
+    char *chaine = "";
 
     //ouverture tube nommé communication services => client
     fd_s_c = open(argv[3], O_WRONLY);   // cat < s_c
@@ -121,7 +131,7 @@ int main(int argc, char * argv[])
         read(fd_c_s, &mdpClient, sizeof(int));
 
         //si mot de passe incorrect
-        if (mdpClient != mdpOrchestre) {
+        if (mdpClient != 0) {
           // envoi au client d'un code d'erreur
           code = CODE_ERROR;
           write(fd_s_c, &code, sizeof(int) );
@@ -132,15 +142,16 @@ int main(int argc, char * argv[])
 
           // réception des données du client (une fct par service)
           chaine = compression_service_receiveDataData(fd_c_s);
-
           // calcul du résultat (une fct par service)
           chaine = compression_service_computeResult(chaine);
-
           // envoi du résultat au client (une fct par service)
           compression_service_sendResult(fd_s_c, chaine);
 
           // attente de l'accusé de réception du client
           read(fd_c_s, &code, sizeof(int));
+
+          //liberer la memoire de la chaine utilisée
+          free(chaine);
         }
         //    modification du sémaphore pour prévenir l'orchestre de la fin
         //pas encore implementé
@@ -152,6 +163,5 @@ int main(int argc, char * argv[])
     close(fd_orchestre);
     close(fd_c_s);
     close(fd_s_c);
-
     return EXIT_SUCCESS;
 }

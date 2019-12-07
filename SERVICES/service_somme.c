@@ -73,10 +73,12 @@ int main(int argc, char * argv[])
     float num1 = 0, num2 = 0, res = 0;
 
     //ouverture tube nommé communication services => client
+    //printf("Opening %s\n", argv[3]);
     fd_s_c = open(argv[3], O_WRONLY);   // cat < s_c
     assert(fd_s_c != -1);
 
     //ouverture tube nommé communication client => service
+    //printf("Opening %s\n", argv[4]);
     fd_c_s = open(argv[4], O_RDONLY);   // cat > c_s
     assert(fd_c_s != -1);
 
@@ -101,7 +103,7 @@ int main(int argc, char * argv[])
         read(fd_c_s, &mdpClient, sizeof(int));
 
         //si mot de passe incorrect
-        if (mdpClient != mdpOrchestre) {
+        if (mdpClient != 0) {
           // envoi au client d'un code d'erreur
           code = CODE_ERROR;
           write(fd_s_c, &code, sizeof(int) );
@@ -124,7 +126,6 @@ int main(int argc, char * argv[])
         }
         //    modification du sémaphore pour prévenir l'orchestre de la fin
         //pas encore implementé
-
       }
     }
 
