@@ -27,5 +27,8 @@ int main() {
   int nbThreads = 3;
   write(fd, &nbThreads, sizeof(int));
 
+  int codeError = -1;
+  write(fd, &codeError, sizeof(int));
+
   return 0;
 }

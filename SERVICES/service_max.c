@@ -167,10 +167,12 @@ int main(int argc, char * argv[])
     float res;
 
     //ouverture tube nommé communication services => client
+    //printf("opening %s\n", argv[3] );
     fd_s_c = open(argv[3], O_WRONLY);   // cat < s_c
     assert(fd_s_c != -1);
 
     //ouverture tube nommé communication client => service
+    //printf("opening %s\n", argv[4] );
     fd_c_s = open(argv[4], O_RDONLY);   // cat > c_s
     assert(fd_c_s != -1);
 
@@ -213,6 +215,8 @@ int main(int argc, char * argv[])
           // attente de l'accusé de réception du client
           read(fd_c_s, &code, sizeof(int));
 
+          //liberer le tableau
+          free(tableau.tab);
         }
         //    modification du sémaphore pour prévenir l'orchestre de la fin
         //pas encore implementé
