@@ -91,9 +91,9 @@ int main(int argc, char * argv[])
     pthread_t threads[nbThreads];
     ThreadData datas[nbThreads];
     float res = 0;
-    // pré-initialisation des données
+    // distance que chaque thread va traiter
     int distance = taille / nbThreads;
-    printf("distance %d\n", distance);
+
     for (int i = 0; i < nbThreads; i++)
     {
       // il faut initialiser datas[i] avec :
@@ -111,11 +111,10 @@ int main(int argc, char * argv[])
       datas[i].bSup = ((i+1) * distance )- 1;
     }
 
-    // si le tableau est de taille impair, le dernier thread doit s'occuper jusqu'a la derniere case
-    // mais il arrive jusqu'a la avant derniere, alors changer sa valeur pour la derniere.
-    if (nbThreads % 2 == 1) {
-      datas[nbThreads - 1].bSup = taille - 1;
-    }
+    //changer la valeur de la derniere case pour la fin du tableau,
+    // pour eviter la situation d'avoir un tableau de taille paire et le nb de threads impair...
+    // car le dernier thread va arriver jusqu'a la avant derniere case
+    datas[nbThreads - 1].bSup = taille - 1;
 
     // lancement des threads
      for (int i = 0; i < nbThreads; i++)
