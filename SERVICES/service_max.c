@@ -85,13 +85,15 @@ int main(int argc, char * argv[])
       tab[i] = i;
     }
 
-    int nbThreads = 1;
+    int nbThreads = 3;
     //initialiser les pthreads et mutex
     pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
     pthread_t threads[nbThreads];
     ThreadData datas[nbThreads];
     float res = 0;
     // pré-initialisation des données
+    int distance = taille / nbThreads;
+    printf("distance %d\n", distance);
     for (int i = 0; i < nbThreads; i++)
     {
       // il faut initialiser datas[i] avec :
@@ -103,8 +105,17 @@ int main(int argc, char * argv[])
       datas[i].taille = taille;
       datas[i].res = &res;
       datas[i].mutex = &mutex;
+
+      // initialiser bornes de chaque thread
+      datas[i].bInf = i * distance;
+      datas[i].bSup = ((i+1) * distance )- 1;
     }
 
+    // si le tableau est de taille impair, le dernier thread doit s'occuper jusqu'a la derniere case
+    // mais il arrive jusqu'a la avant derniere, alors changer sa valeur pour la derniere.
+    if (nbThreads % 2 == 1) {
+      datas[nbThreads - 1].bSup = taille - 1;
+    }
 
     // lancement des threads
      for (int i = 0; i < nbThreads; i++)
