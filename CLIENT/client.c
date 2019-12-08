@@ -28,25 +28,27 @@ static void usage(const char *exeName, const char *message)
     exit(EXIT_FAILURE);
 }
 
-
-
-
-
-
-void askConnexion(Pair *pipes, Connexion *c)
+static void askConnexion(Pair *pipes, Connexion *c)
 {
     clientWriteData(pipes, &c, sizeof(struct Connexion));
 }
 
-int establishedConnexion(Pair *pipes, Connexion *c)
+static int establishedConnexion(Pair *pipes, Connexion *c)
 {
     int n;
     clientReadData(pipes, &c, sizeof(struct Connexion));
     retour c->code;
 }
 
+static void receive(Pair *pipes, Response *response)
+{
+    clientReadData(pipes, &response, sizeof(struct Response));
+}
 
-
+static void EOF()
+{
+     clientWriteData(pipes, &c, sizeof(struct Connexion));
+}
 
 
 int main(int argc, char * argv[])
@@ -58,7 +60,7 @@ int main(int argc, char * argv[])
 
     // initialisations diverses
     Pair fd = getPipes(numService);
-
+    
     // entrée en section critique pour communiquer avec l'orchestre
     pthread_mutex_lock(getMutex(numService));
     // envoi à l'orchestre du numéro du service

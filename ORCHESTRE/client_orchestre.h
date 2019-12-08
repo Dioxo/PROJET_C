@@ -21,7 +21,7 @@ typedef struct {
 } Connexion;
 
 typedef struct {
-    char *password;
+    int password;
     char *CtoO;
     char *OtoC;
 } Response;
