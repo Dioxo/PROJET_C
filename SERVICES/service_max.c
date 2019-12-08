@@ -35,9 +35,9 @@ typedef struct {
 void * codeThread(void * arg)
 {
   ThreadData *data = (ThreadData *) arg;
-  float max = data->tab[0];
+  float max = data->tab[data->bInf];
 
-  for (int i = 1; i < data->taille; i++) {
+  for (int i = data->bInf + 1; i <= data->bSup; i++) {
     if (max < data->tab[i]) {
       max = data->tab[i];
     }
@@ -81,7 +81,7 @@ int main(int argc, char * argv[])
     // initialisations diverses
     int taille = 10;
     float tab[taille];
-    for (int i = 1; i < taille; i++) {
+    for (int i = 0; i < taille; i++) {
       tab[i] = i;
     }
 
