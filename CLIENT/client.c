@@ -28,16 +28,15 @@ static void usage(const char *exeName, const char *message)
     exit(EXIT_FAILURE);
 }
 
-static void askConnexion(Pair *pipes, Connexion *c)
+static void askConnection(Pair *pipes, Connection *c)
 {
-    clientWriteData(pipes, &c, sizeof(struct Connexion));
+    clientWriteData(pipes, &c, sizeof(struct Connection));
 }
 
-static int establishedConnexion(Pair *pipes, Connexion *c)
+static int establishedConnection(Pair *pipes, Connection *c)
 {
-    int n;
-    clientReadData(pipes, &c, sizeof(struct Connexion));
-    retour c->code;
+    clientReadData(pipes, &c, sizeof(struct Connection));
+    retour c->request;
 }
 
 static void receive(Pair *pipes, Response *response)
@@ -45,9 +44,9 @@ static void receive(Pair *pipes, Response *response)
     clientReadData(pipes, &response, sizeof(struct Response));
 }
 
-static void EOF()
+static void sendEOF(Pair *pipes, Connection *c)
 {
-     clientWriteData(pipes, &c, sizeof(struct Connexion));
+     clientWriteData(pipes, &c, sizeof(struct Connection));
 }
 
 
@@ -59,48 +58,48 @@ int main(int argc, char * argv[])
     int numService = strtol(argv[1], NULL, 10);
 
     // initialisations diverses
-    Pair fd = getPipes(numService);
+    Pair pipes;
+    Connection connection;
+    Response response;
     
     // entrée en section critique pour communiquer avec l'orchestre
     pthread_mutex_lock(getMutex(numService));
     // envoi à l'orchestre du numéro du service
-    askConnexion(Pair *pipes, Connexion *c);
-
+    connection.request = ASK_REQUEST;
+    askConnection(&pipes, &connection);
     // attente code de retour
-    response  = waitResponseOrchestra();
+    //waitResponseOrchestra();
     // si code d'erreur
-    if (establishedConnexion() == -1)
+    if (establishedConnection()  == REQUEST_FAIL);
     {
-        myassert(O_response == 0, response)
+        myassert(establishedConnection() == REQUEST_FAIL, "Connection request has failed")
         //     sortie de la section critique
-        pthread_mutex_unlock(response -> mutex);
+        pthread_mutex_unlock(getMutex(numService));
     }
     // sinon
     else
     {
         //     récupération du mot de passe et des noms des 2 tubes
-        password = response -> password;
-        tubesName = response -> tube1 -> name;
-        tubesName = response -> tube2 -> name;
+        receive(&pipes,&response);
         //     envoi d'une accusé de réception à l'orchestre
-        sendtoOrchestra();
+        connection.request = REQUEST_EOF;
+        sendEOF(&pipes, &connection);
         //     sortie de la section critique
-        pthread_mutex_unlock(response -> mutex);
+        //pthread_mutex_unlock(getMutex(numService));
         //     envoi du mot de passe au service
-        sendtoService(password);
+        //sendtoService(password);
         //     attente de l'accusé de réception du service
-        S_response  = waitResponseService();
+        //S_response  = waitResponseService();
         //     appel de la fonction d'envoi des données (une fct par service)
-        client_somme_sendData(/* tubes,*/ int argc, char * argv[]){}
-        client_max_sendData(/* tubes,*/ int argc, char * argv[]){}
-        void client_compression_sendData(/* tubes,*/ int argc, char * argv[]){}
+        //client_somme_sendData(/* tubes,*/ int argc, char * argv[]){}
+        //client_max_sendData(/* tubes,*/ int argc, char * argv[]){}
+        //void client_compression_sendData(/* tubes,*/ int argc, char * argv[]){}
         //     appel de la fonction de réception du résultat (une fct par service)
-        void client_somme_receiveResult(/* tubes,*/ int argc, char * argv[]);
-        void client_max_receiveResult(/* tubes,*/ int argc, char * argv[]);
-        void client_compression_receiveResult(/* tubes,*/ int argc, char * argv[]);
+        //void client_somme_receiveResult(/* tubes,*/ int argc, char * argv[]);
+        //void client_max_receiveResult(/* tubes,*/ int argc, char * argv[]);
+        //void client_compression_receiveResult(/* tubes,*/ int argc, char * argv[]);
         //     envoi d'un accusé de réception au service
-        sendtoService(acknowledgment);
-
+       //sendtoService(acknowledgment);
     }
     // libération éventuelle de ressources
     

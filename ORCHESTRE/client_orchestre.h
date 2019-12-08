@@ -6,21 +6,30 @@
 //   temps avec l'orchestre
 // - les deux tubes nommés pour la communication bidirectionnelle
 
-typedef struct {
+#define REQUEST_ASK 1;
+#define REQUEST_FAIL 0;
+#define REQUEST_ACCEPT 2;
+#define REQUEST_EOF 3;
+
+typedef struct 
+{
     char *name;
     int fd;
 } NamedPipe;
 
-typedef struct {
+typedef struct 
+{
     NamedPipe CtoO;
     NamedPipe OtoC;
 } Pair;
 
-typedef struct {
-    int code;     
-} Connexion;
+typedef struct 
+{
+    int request;     
+} Connection;
 
-typedef struct {
+typedef struct 
+{
     int password;
     char *CtoO;
     char *OtoC;
