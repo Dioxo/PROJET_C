@@ -15,8 +15,9 @@
 // - les tubes de communication
 // - argc et argv fournis au main
 // Cette fonction analyse argv et en déduit les données à envoyer
-void client_max_sendData(/* tubes,*/ int argc, char * argv[])
+void client_max_sendData(Pair *pipes, int argc, char * argv[])
 {
+
     // par exemple argv[2] est le nom du fichier contenant la suite
     // de nombres
 }

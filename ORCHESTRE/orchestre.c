@@ -20,12 +20,17 @@ int main(int argc, char * argv[])
     if (argc != 2)
         usage(argv[0], "nombre paramètres incorrect");
 
+
+
     // lecture du fichier de configuration
 
     // Pour la communication avec les clients
     // - création de 2 tubes nommés pour converser avec les clients
+    Pair pipes;
+    orchestraCreatePipes(argv[1], Pair *pipes);
     // - création d'un sémaphore pour que deux clients ne
     //   ne communiquent pas en même temps avec l'orchestre
+    
     
     // lancement des services, avec pour chaque service :
     // - création d'un tube anonyme pour converser (orchestre vers service)
@@ -33,6 +38,8 @@ int main(int argc, char * argv[])
     //   fin d'un traitement
     // - création de deux tubes nommés pour les communications entre
     //   les clients et le service
+
+    
 
     while (true)
     {

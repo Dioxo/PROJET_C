@@ -13,11 +13,14 @@
 #include "client_orchestre.h"
 
 //---------------------------------------------------------------------------------
+/* ============================
+    Constructeur et Destructeur
+   ============================   */ 
 //---------------------------------------------------------------------------------
-static void createPipe(const char *basename, const char *msg, int numPipe, int numService, NamedPipe *pipe)
+static void createPipe(const char *basename, const char *msg, int numService, NamedPipe *pipe)
 {
 	int nameLength;
-	nameLength = snprintf(NULL, 0, "%s_%d_%d", basename, numPipe, numService);
+	nameLength = snprintf(NULL, 0, "%s_%d", basename, numService);
 	pipe->name = malloc((nameLength + 1) * sizeof(char));
 	sprintf(pipe->name, "%s_%d_%d", basename, numPipe, numService);
 
@@ -25,13 +28,13 @@ static void createPipe(const char *basename, const char *msg, int numPipe, int n
     myassert(ret == 0, msg);
 }
 //---------------------------------------------------------------------------------
-void orchestraCreatePipes(int numPipe, int numService, Pair *pipes)
+void orchestraCreatePipes(int numService, Pair *pipes)
 {
 	createPipe("pipeClientToOrchestra", "Création tube CtoO", 
-		numPipe, numService, &(pipes->CtoO));
+        numService, &(pipes->CtoO));
 
 	createPipe("pipeOrchestraToClient", "Création tube OtoC",
-		numPipe, numService, &(pipes->OtoC));
+		numService, &(pipes->OtoC));
 
 }
 
@@ -56,6 +59,9 @@ void orchestraDestroyPipes(Pair *pipes)
 
 
 //---------------------------------------------------------------------------------
+/* =================================
+    Ouverture et fermeture des tubes
+   =================================  */ 
 //---------------------------------------------------------------------------------
 static void openPipe(const char *name, int flag, const char *msg, NamedPipe *pipe)
 {
@@ -103,6 +109,9 @@ void clientClosePipes(Pair *pipes)
 }
 
 //---------------------------------------------------------------------------------
+/* =================================
+        Envois et réceptions
+   =================================  */ 
 //---------------------------------------------------------------------------------
 static void writeData(NamedPipe *pipe, const void *buf, size_t size, const char *msg)
 {
@@ -139,6 +148,19 @@ void clientReadData(Pair *pipes, void *buf, size_t size)
 {
     readData(&(pipes->CtoO), buf, size, "client lecture de orchestra");
 }
+
+//--------------------------------------------------------------------------------
+/* =================================
+        Attente d'une réponse
+   =================================  */ 
+//--------------------------------------------------------------------------------
+
+
+//--------------------------------------------------------------------------------
+/* =================================
+        Accesseur et mutateur
+   =================================  */ 
+//--------------------------------------------------------------------------------
 
 
 /*
