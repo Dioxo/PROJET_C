@@ -9,6 +9,8 @@
 #include <fcntl.h>
 #include <string.h>
 
+#include "client_service.h"
+
 #ifndef SERVICE_MAX_CODES
 #define CODE_ACCEPT 0
 #define CODE_ERROR -1
@@ -62,7 +64,7 @@ void * codeThread(void * arg)
   }
 
   pthread_mutex_lock(data->mutex);
-
+  printf("MAX LOCAL %f\n", max);
   if ( *(data->res) < max ) {
     *(data->res) = max;
   }
@@ -73,22 +75,22 @@ void * codeThread(void * arg)
 }
 
 // fonction de réception des données
-void max_service_receiveDataData(int r, Tableau *tableau, int *nbThreads)
+void max_service_receiveDataData(Pair *pipes, Tableau *tableau, int *nbThreads)
 {
   int taille;
-  read(r, &taille, sizeof(int));
+  serviceReadData(pipes, &taille, sizeof(int));
 
   //donner la taille du tableau à la structure
   tableau->taille = taille;
   tableau->tab = malloc(taille * sizeof(float));
   for (int i = 0; i < taille; i++) {
     //remplir le tableau
-    read(r, tableau->tab, sizeof(float));
+    serviceReadData(pipes, tableau->tab, sizeof(float));
     tableau->tab++;
   }
   tableau->tab -= taille;
 
-  read(r, nbThreads, sizeof(int));
+  serviceReadData(pipes, nbThreads, sizeof(int));
 }
 
 // fonction de traitement des données
@@ -145,9 +147,9 @@ void max_service_computeResult(Tableau *tableau, int nbThreads, float *res)
 }
 
 // fonction d'envoi du résultat
-void max_service_sendResult(int w, float res)
+void max_service_sendResult(Pair *pipes, float res)
 {
-  write(w, &res, sizeof(float));
+  serviceWriteData(pipes, &res, sizeof(float));
 }
 
 
@@ -161,21 +163,12 @@ int main(int argc, char * argv[])
 
     // initialisations diverses
     int fd_orchestre= atoi(argv[2]);
-    int fd_s_c,  fd_c_s;
     Tableau tableau;
     int nbThreads = 0;
     float res;
 
-    //ouverture tube nommé communication services => client
-    //printf("opening %s\n", argv[3] );
-    fd_s_c = open(argv[3], O_WRONLY);   // cat < s_c
-    assert(fd_s_c != -1);
-
-    //ouverture tube nommé communication client => service
-    //printf("opening %s\n", argv[4] );
-    fd_c_s = open(argv[4], O_RDONLY);   // cat > c_s
-    assert(fd_c_s != -1);
-
+    Pair pipes;
+    serviceOpenPipes(argv[3], argv[4], &pipes);
 
     int mdpClient;
     int mdpOrchestre;
@@ -193,27 +186,27 @@ int main(int argc, char * argv[])
         //read(fd_orchestre, &mdpOrchestre, sizeof(int));
 
         // attente du mot de passe du client
-        read(fd_c_s, &mdpClient, sizeof(int));
+        serviceReadData(&pipes, &mdpClient,sizeof(int));
 
         //si mot de passe incorrect
         if (mdpClient != 0) {
           // envoi au client d'un code d'erreur
           code = CODE_ERROR;
-          write(fd_s_c, &code, sizeof(int) );
+          serviceWriteData(&pipes, &code, sizeof(int) );
         }else{
           // envoi au client d'un code d'acceptation
           code = CODE_ACCEPT;
-          write(fd_s_c, &code, sizeof(int));
+          serviceWriteData(&pipes, &code, sizeof(int) );
 
           // réception des données du client (une fct par service)
-          max_service_receiveDataData(fd_c_s, &tableau, &nbThreads);
+          max_service_receiveDataData(&pipes, &tableau, &nbThreads);
           // calcul du résultat (une fct par service)
           max_service_computeResult(&tableau, nbThreads, &res);
           // envoi du résultat au client (une fct par service)
-          max_service_sendResult(fd_s_c, res);
+          max_service_sendResult(&pipes, res);
 
           // attente de l'accusé de réception du client
-          read(fd_c_s, &code, sizeof(int));
+          serviceReadData(&pipes, &code, sizeof(int));
 
           //liberer le tableau
           free(tableau.tab);
@@ -226,8 +219,7 @@ int main(int argc, char * argv[])
 
     // libération éventuelle de ressources
     close(fd_orchestre);
-    close(fd_c_s);
-    close(fd_s_c);
+    serviceClosePipes(&pipes);
 
     return EXIT_SUCCESS;
 }
