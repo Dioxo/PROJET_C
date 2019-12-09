@@ -8,12 +8,16 @@
 #include <fcntl.h>
 #include <string.h>
 
+//#include "service_orchestre.h"
+#include "client_service.h"
 
 #ifndef SERVICE_COMPRESSION_CODES
 #define CODE_ACCEPT 0
 #define CODE_ERROR -1
 #define CODE_FIN -2
 #endif
+
+
 
 static void usage(const char *exeName, const char *message)
 {
@@ -31,14 +35,14 @@ static void usage(const char *exeName, const char *message)
  *----------------------------------------------*/
 
 // fonction de réception des données
-char * compression_service_receiveDataData(int r /* autre chose ? */)
+char * compression_service_receiveDataData(Pair *pipes /* autre chose ? */)
 {
   int taille = 0;
-  read(r, &taille, sizeof(int));
+  serviceReadData(pipes, &taille, sizeof(int));
   assert(taille != 0);
 
-  char *chaine = malloc(taille + 1);
-  read(r, chaine, taille + 1);
+  char *chaine = malloc(taille);
+  serviceReadData(pipes, chaine, taille);
 
   return chaine;
 }
@@ -78,14 +82,14 @@ char * compression_service_computeResult(char* chaine)
 }
 
 // fonction d'envoi du résultat
-void compression_service_sendResult(int w, const char *chaine)
+void compression_service_sendResult(Pair *pipes, const char *chaine)
 {
   //envoi la taille de la chaine
-  int taille = strlen(chaine);
-  write(w, &taille, sizeof(int));
+  int taille = strlen(chaine) + 1;
+  serviceWriteData(pipes, &taille, sizeof(int));
 
   //envoi la chaine mnt
-  write(w, chaine, taille);
+  serviceWriteData(pipes, chaine, taille);
 }
 
 
@@ -99,16 +103,13 @@ int main(int argc, char * argv[])
 
     // initialisations diverses
     int fd_orchestre= atoi(argv[2]);
-    int fd_s_c,  fd_c_s;
     char *chaine = "";
 
-    //ouverture tube nommé communication services => client
-    fd_s_c = open(argv[3], O_WRONLY);   // cat < s_c
-    assert(fd_s_c != -1);
-
-    //ouverture tube nommé communication client => service
-    fd_c_s = open(argv[4], O_RDONLY);   // cat > c_s
-    assert(fd_c_s != -1);
+    // ouverture de tube nommés
+    // communication services => client
+    // communication client => service
+    Pair pipes;
+    serviceOpenPipes(argv[3], argv[4], &pipes);
 
 
     int mdpClient;
@@ -119,36 +120,36 @@ int main(int argc, char * argv[])
     while (true)
     {
       // attente d'un code de l'orchestre (via tube anonyme)
-      read(fd_orchestre, &code, sizeof(int));
+      //read(fd_orchestre, &code, sizeof(int));
 
       if(code == CODE_ERROR){
         break;
       }else{
         //    réception du mot de passe de l'orchestre
-        read(fd_orchestre, &mdpOrchestre, sizeof(int));
+        //read(fd_orchestre, &mdpOrchestre, sizeof(int));
 
         // attente du mot de passe du client
-        read(fd_c_s, &mdpClient, sizeof(int));
+        serviceReadData(&pipes, &mdpClient,sizeof(int));
 
         //si mot de passe incorrect
         if (mdpClient != 0) {
           // envoi au client d'un code d'erreur
           code = CODE_ERROR;
-          write(fd_s_c, &code, sizeof(int) );
+          serviceWriteData(&pipes, &code, sizeof(int) );
         }else{
           // envoi au client d'un code d'acceptation
           code = CODE_ACCEPT;
-          write(fd_s_c, &code, sizeof(int));
+          serviceWriteData(&pipes, &code, sizeof(int) );
 
           // réception des données du client (une fct par service)
-          chaine = compression_service_receiveDataData(fd_c_s);
+          chaine = compression_service_receiveDataData(&pipes);
           // calcul du résultat (une fct par service)
           chaine = compression_service_computeResult(chaine);
           // envoi du résultat au client (une fct par service)
-          compression_service_sendResult(fd_s_c, chaine);
+          compression_service_sendResult(&pipes, chaine);
 
           // attente de l'accusé de réception du client
-          read(fd_c_s, &code, sizeof(int));
+          serviceReadData(&pipes, &code, sizeof(int));
 
           //liberer la memoire de la chaine utilisée
           free(chaine);
@@ -161,7 +162,6 @@ int main(int argc, char * argv[])
 
     // libération éventuelle de ressources
     close(fd_orchestre);
-    close(fd_c_s);
-    close(fd_s_c);
+    serviceClosePipes(&pipes);
     return EXIT_SUCCESS;
 }
