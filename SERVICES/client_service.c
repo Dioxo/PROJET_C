@@ -108,13 +108,8 @@ static void closePipe(NamedPipe *pipe)
 //---------------------------------------------------------------------------------
 void clientClosePipes(Pair *pipes)
 {
-	printf("closing \n");
 	closePipe(&(pipes->C_S));
-	printf("closed \n");
-
-	printf("closing \n");
 	closePipe(&(pipes->S_C));
-	printf("closed \n");
 }
 
 //---------------------------------------------------------------------------------
