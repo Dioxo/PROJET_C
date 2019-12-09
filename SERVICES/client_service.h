@@ -38,7 +38,7 @@ void destroyPipes(Pair *pipes);
 
 Pair clientOpenPipes(const char *s_c,const char *c_s);
 void clientClosePipes(Pair *pipes);
-void serviceOpenPipes(Pair *pipes);
+Pair serviceOpenPipes(const char *s_c,const char *c_s);
 //le service ne ferme pas le pipe, il le detruit directement
 
 /* =================================

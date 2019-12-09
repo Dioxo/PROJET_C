@@ -65,10 +65,19 @@ static void openPipe(int flag, NamedPipe *pipe)
     assert(pipe->fd != -1);
 }
 //---------------------------------------------------------------------------------
-void serviceOpenPipes(Pair *pipes)
+Pair serviceOpenPipes(const char *s_c,const char *c_s)
 {
+	Pair pipes;
+	pipes.C_S.name = malloc(sizeof(char) * (strlen(c_s) + 1));
+	strcpy(pipes.C_S.name, c_s);
+
+	pipes.S_C.name = malloc(sizeof(char) * (strlen(s_c) + 1 ));
+	strcpy(pipes.S_C.name, s_c);
+
 	openPipe( O_RDONLY , &(pipes->C_S));
 	openPipe( O_WRONLY , &(pipes->S_C));
+
+	return pipes;
 }
 //---------------------------------------------------------------------------------
 Pair clientOpenPipes(const char *s_c,const char *c_s)
