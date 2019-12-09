@@ -36,9 +36,9 @@ void destroyPipes(Pair *pipes);
  	Ouverture et fermeture des tubes
    =================================  */
 
-Pair clientOpenPipes(const char *s_c,const char *c_s);
+void clientOpenPipes(const char *s_c,const char *c_s, Pair *pipes);
 void clientClosePipes(Pair *pipes);
-Pair serviceOpenPipes(const char *s_c,const char *c_s);
+void serviceOpenPipes(const char *s_c,const char *c_s,Pair *pipes);
 void serviceClosePipes(Pair *pipes);
 
 /* =================================

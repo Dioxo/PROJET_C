@@ -14,7 +14,7 @@
 #endif
 
 //#include "service_orchestre.h"
-//#include "client_service.h"
+#include "client_service.h"
 
 
 static void usage(const char *exeName, const char *message)
@@ -33,10 +33,10 @@ static void usage(const char *exeName, const char *message)
  *----------------------------------------------*/
 
 // fonction de réception des données
-void somme_service_receiveDataData(int r, float *num1, float *num2)
+void somme_service_receiveDataData(Pair *pipes, float *num1, float *num2)
 {
-  read(r, num1, sizeof(float));
-  read(r, num2, sizeof(float));
+  serviceReadData(pipes,num1, sizeof(float));
+  serviceReadData(pipes,num2, sizeof(float));
 }
 
 // fonction de traitement des données
@@ -46,9 +46,10 @@ void somme_service_computeResult(float *a, float *b, float *res)
 }
 
 // fonction d'envoi du résultat
-void somme_service_sendResult(int w, float *res)
+void somme_service_sendResult(Pair *pipes, float *res)
 {
-  write(w, res, sizeof(float));
+  printf("result %f\n", *res);
+  serviceWriteData(pipes,res, sizeof(float));
 }
 
 
@@ -69,22 +70,16 @@ int main(int argc, char * argv[])
 
     // initialisations diverses
     int fd_orchestre= atoi(argv[2]);
-    int fd_s_c,  fd_c_s;
     float num1 = 0, num2 = 0, res = 0;
-
-    //ouverture tube nommé communication services => client
-    //printf("Opening %s\n", argv[3]);
-    fd_s_c = open(argv[3], O_WRONLY);   // cat < s_c
-    assert(fd_s_c != -1);
-
-    //ouverture tube nommé communication client => service
-    //printf("Opening %s\n", argv[4]);
-    fd_c_s = open(argv[4], O_RDONLY);   // cat > c_s
-    assert(fd_c_s != -1);
-
-
     int mdpClient;
     int mdpOrchestre;
+
+
+    // ouverture de tube nommés
+    // communication services => client
+    // communication client => service
+    Pair pipes;
+    serviceOpenPipes(argv[3], argv[4], &pipes);
 
     //variable qui va prendre le valeurs de divers codes erreurs, acceptation, etc
     int code = 0;
@@ -100,29 +95,29 @@ int main(int argc, char * argv[])
         read(fd_orchestre, &mdpOrchestre, sizeof(int));
 
         // attente du mot de passe du client
-        read(fd_c_s, &mdpClient, sizeof(int));
+        serviceReadData(&pipes, &mdpClient,sizeof(int));
 
         //si mot de passe incorrect
-        if (mdpClient != 0) {
+        if (mdpClient != mdpOrchestre) {
           // envoi au client d'un code d'erreur
           code = CODE_ERROR;
-          write(fd_s_c, &code, sizeof(int) );
+          serviceWriteData(&pipes, &code, sizeof(int) );
         }else{
           // envoi au client d'un code d'acceptation
           code = CODE_ACCEPT;
-          write(fd_s_c, &code, sizeof(int));
+          serviceWriteData(&pipes, &code, sizeof(int) );
 
           // réception des données du client (une fct par service)
-          somme_service_receiveDataData(fd_c_s, &num1, &num2);
+          somme_service_receiveDataData(&pipes, &num1, &num2);
 
           // calcul du résultat (une fct par service)
           somme_service_computeResult(&num1, &num2, &res);
 
           // envoi du résultat au client (une fct par service)
-          somme_service_sendResult(fd_s_c, &res);
+          somme_service_sendResult(&pipes, &res);
 
           // attente de l'accusé de réception du client
-          read(fd_c_s, &code, sizeof(int));
+          serviceReadData(&pipes, &code, sizeof(int));
         }
         //    modification du sémaphore pour prévenir l'orchestre de la fin
         //pas encore implementé
@@ -131,8 +126,8 @@ int main(int argc, char * argv[])
 
     // libération éventuelle de ressources
     close(fd_orchestre);
-    close(fd_c_s);
-    close(fd_s_c);
+
+    serviceClosePipes(&pipes);
 
     return EXIT_SUCCESS;
 }

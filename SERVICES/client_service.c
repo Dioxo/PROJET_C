@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <assert.h>
 #include <stdbool.h>
+#include <errno.h>
 
 #include "client_service.h"
 
@@ -23,7 +24,7 @@ static void createPipe(const char *basename, int numService, NamedPipe *pipe)
 		pipe->name = malloc((nameLength + 1) * sizeof(char));
 	  sprintf(pipe->name, "%s_%d", basename, numService);
 
-		int ret = mkfifo(pipe->name, 0600);
+		int ret = mkfifo(pipe->name, 0644);
 	  assert(ret == 0);
 }
 //---------------------------------------------------------------------------------
@@ -65,37 +66,31 @@ static void openPipe(int flag, NamedPipe *pipe)
     assert(pipe->fd != -1);
 }
 //---------------------------------------------------------------------------------
-Pair serviceOpenPipes(const char *s_c,const char *c_s)
+void serviceOpenPipes(const char *s_c,const char *c_s, Pair *pipes)
 {
-	Pair pipes;
-	pipes.C_S.name = malloc(sizeof(char) * (strlen(c_s) + 1));
-	strcpy(pipes.C_S.name, c_s);
+	pipes->C_S.name = malloc(sizeof(char) * (strlen(c_s) + 1));
+	strcpy(pipes->C_S.name, c_s);
 
-	pipes.S_C.name = malloc(sizeof(char) * (strlen(s_c) + 1 ));
-	strcpy(pipes.S_C.name, s_c);
+	pipes->S_C.name = malloc(sizeof(char) * (strlen(s_c) + 1 ));
+	strcpy(pipes->S_C.name, s_c);
 
 	openPipe( O_RDONLY , &(pipes->C_S));
 	openPipe( O_WRONLY , &(pipes->S_C));
-
-	return pipes;
 }
 //---------------------------------------------------------------------------------
-Pair clientOpenPipes(const char *s_c,const char *c_s)
+void clientOpenPipes(const char *s_c,const char *c_s, Pair *pipes)
 {
-	Pair pipes;
-	pipes.C_S.name = malloc(sizeof(char) * (strlen(c_s) + 1));
-	strcpy(pipes.C_S.name, c_s);
+	pipes->C_S.name = malloc(sizeof(char) * (strlen(c_s) + 1));
+	strcpy(pipes->C_S.name, c_s);
 
-	pipes.S_C.name = malloc(sizeof(char) * (strlen(s_c) + 1 ));
-	strcpy(pipes.S_C.name, s_c);
+	pipes->S_C.name = malloc(sizeof(char) * (strlen(s_c) + 1 ));
+	strcpy(pipes->S_C.name, s_c);
 
-	openPipe( O_WRONLY, &(pipes.C_S));
-	openPipe( O_RDONLY,&(pipes.S_C));
+	openPipe( O_WRONLY, &(pipes->C_S));
+	openPipe( O_RDONLY,&(pipes->S_C));
 
-	return pipes;
 }
 
-//---------------------------------------------------------------------------------
 //---------------------------------------------------------------------------------
 static void closePipe(NamedPipe *pipe)
 {
@@ -103,6 +98,9 @@ static void closePipe(NamedPipe *pipe)
   free(pipe->name);
   pipe->name = NULL;
   ret = close(pipe->fd);
+	if (ret == -1) {
+		perror("ERROR : ");
+	}
   assert(ret == 0);
   pipe->fd = -1;
 }
@@ -110,15 +108,20 @@ static void closePipe(NamedPipe *pipe)
 //---------------------------------------------------------------------------------
 void clientClosePipes(Pair *pipes)
 {
+	printf("closing \n");
 	closePipe(&(pipes->C_S));
+	printf("closed \n");
+
+	printf("closing \n");
 	closePipe(&(pipes->S_C));
+	printf("closed \n");
 }
 
 //---------------------------------------------------------------------------------
 void serviceClosePipes(Pair *pipes)
 {
-	closePipe(&(pipes->C_S));
 	closePipe(&(pipes->S_C));
+	closePipe(&(pipes->C_S));
 }
 
 //---------------------------------------------------------------------------------

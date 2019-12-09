@@ -8,17 +8,13 @@
 
 int main(int argc, char const *argv[]) {
   Pair service;
-  createPipes(1 , &service);
-  createPipes(1 , &service);
 
-  serviceOpenPipes(&service);
+  service = serviceOpenPipes("S_C_1", "C_S_1");
 
   char *chaine = "test";
   printf("sending chaine \n");
   serviceWriteData(&service, chaine, 5);
   printf("chaine envoyé\n");
-
-  sleep(5);
-  destroyPipes(&service);
+  serviceClosePipes(&service);
   return 0;
 }
