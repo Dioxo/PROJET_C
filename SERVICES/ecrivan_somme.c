@@ -26,12 +26,12 @@ int main(int argc, char *argv[]) {
   b = atof(argv[2]);
   int mdp = atoi(argv[3]);
 
-  int code;
 
 
 
   clientWriteData(&client, &mdp, sizeof(int));
 
+  int code;
   printf("reading code service\n");
   clientReadData(&client, &code, sizeof(int));
   printf("code = %d\n", code);
