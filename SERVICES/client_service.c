@@ -115,6 +115,13 @@ void clientClosePipes(Pair *pipes)
 }
 
 //---------------------------------------------------------------------------------
+void serviceClosePipes(Pair *pipes)
+{
+	closePipe(&(pipes->C_S));
+	closePipe(&(pipes->S_C));
+}
+
+//---------------------------------------------------------------------------------
 static void writeData(NamedPipe *pipe, const void *buf, size_t size)
 {
     ssize_t ret = write(pipe->fd, buf, size);
