@@ -120,19 +120,19 @@ int main(int argc, char * argv[])
     while (true)
     {
       // attente d'un code de l'orchestre (via tube anonyme)
-      //read(fd_orchestre, &code, sizeof(int));
+      read(fd_orchestre, &code, sizeof(int));
 
-      if(code == CODE_ERROR){
+      if(code == CODE_FIN){
         break;
       }else{
         //    réception du mot de passe de l'orchestre
-        //read(fd_orchestre, &mdpOrchestre, sizeof(int));
+        read(fd_orchestre, &mdpOrchestre, sizeof(int));
 
         // attente du mot de passe du client
         serviceReadData(&pipes, &mdpClient,sizeof(int));
 
         //si mot de passe incorrect
-        if (mdpClient != 0) {
+        if (mdpClient != mdpOrchestre) {
           // envoi au client d'un code d'erreur
           code = CODE_ERROR;
           serviceWriteData(&pipes, &code, sizeof(int) );
