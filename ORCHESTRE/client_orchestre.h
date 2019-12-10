@@ -6,10 +6,10 @@
 //   temps avec l'orchestre
 // - les deux tubes nommés pour la communication bidirectionnelle
 
-#define REQUEST_ASK 1;
-#define REQUEST_FAIL 0;
-#define REQUEST_ACCEPT 2;
-#define REQUEST_EOF 3;
+#define REQUEST_ASK 1
+#define REQUEST_FAIL 0
+#define REQUEST_ACCEPT 2
+#define REQUEST_EOF 3
 
 typedef struct 
 {
@@ -35,12 +35,14 @@ typedef struct
     char *OtoC;
 } Response;
 
+
+
 /* ============================
  	Constructeur et Destructeur
    ============================   */ 
 
-void orchestraCreatePipes(int numPipe, int numService, Pair *pipes);
-void orchestraCreateThread(int numPipe, int numService, Pair *pipes);
+void orchestraCreatePipes(Pair *pipes);
+void orchestraCreateThread(Pair *pipes);
 
 void orchestraDestroyPipes(Pair *pipes);
 
@@ -73,8 +75,8 @@ int clientWaitResponse();
 		Accesseur et mutateur
    =================================  */ 
 
-Pair getPipes(int numService);
-pthread_mutex_t getMutex(int numService);
+Pair getPipes();
+//pthread_mutex_t getMutex(int numService);
 
 
 

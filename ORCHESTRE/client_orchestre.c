@@ -12,29 +12,28 @@
 
 #include "client_orchestre.h"
 
+
+
 //---------------------------------------------------------------------------------
 /* ============================
     Constructeur et Destructeur
    ============================   */ 
 //---------------------------------------------------------------------------------
-static void createPipe(const char *basename, const char *msg, int numService, NamedPipe *pipe)
+static void createPipe(const char *basename, const char *msg , NamedPipe *pipe)
 {
 	int nameLength;
-	nameLength = snprintf(NULL, 0, "%s_%d", basename, numService);
+	nameLength = snprintf(NULL, 0, "%s", basename);
 	pipe->name = malloc((nameLength + 1) * sizeof(char));
-	sprintf(pipe->name, "%s_%d_%d", basename, numPipe, numService);
+	sprintf(pipe->name, "%s", basename);
 
 	int ret = mkfifo(pipe->name, 0600);
     myassert(ret == 0, msg);
 }
 //---------------------------------------------------------------------------------
-void orchestraCreatePipes(int numService, Pair *pipes)
+void orchestraCreatePipes(Pair *pipes)
 {
-	createPipe("pipeClientToOrchestra", "Création tube CtoO", 
-        numService, &(pipes->CtoO));
-
-	createPipe("pipeOrchestraToClient", "Création tube OtoC",
-		numService, &(pipes->OtoC));
+	createPipe("pipeClientToOrchestra", "Création tube CtoO", &(pipes->CtoO));
+	createPipe("pipeOrchestraToClient", "Création tube OtoC", &(pipes->OtoC));
 
 }
 
@@ -72,14 +71,14 @@ static void openPipe(const char *name, int flag, const char *msg, NamedPipe *pip
 //---------------------------------------------------------------------------------
 void orchestraOpenPipes(const char *nameCtoO, const char *nameOtoC, Pair *pipes)
 {
-	openPipe(nameCtoO, O_WRONLY, "orchestra ouverture tube CtoO", &(pipes->CtoO));
-	openPipe(nameOtoC, O_RDONLY, "orchestra ouverture tube OtoC", &(pipes->OtoC));
+	openPipe(nameCtoO, O_RDONLY, "orchestra ouverture tube CtoO", &(pipes->CtoO));
+	openPipe(nameOtoC, O_WRONLY, "orchestra ouverture tube OtoC", &(pipes->OtoC));
 }
 //---------------------------------------------------------------------------------
 void clientOpenPipes(const char *nameCtoO, const char *nameOtoC, Pair *pipes)
 {
-	openPipe(nameCtoO, O_RDONLY, "client ouverture tube CtoO", &(pipes->CtoO));
-	openPipe(nameOtoC, O_WRONLY, "client ouverture tube OtoC", &(pipes->OtoC));
+	openPipe(nameCtoO, O_WRONLY, "client ouverture tube CtoO", &(pipes->CtoO));
+	openPipe(nameOtoC, O_RDONLY, "client ouverture tube OtoC", &(pipes->OtoC));
 
 }
 
@@ -141,12 +140,12 @@ static void readData(NamedPipe *pipe, void *buf, size_t size, const char *msg)
 //---------------------------------------------------------------------------------
 void orchestraReadData(Pair *pipes, void *buf, size_t size)
 {
-    readData(&(pipes->OtoC), buf, size, "orchestra lecture de client");
+    readData(&(pipes->CtoO), buf, size, "orchestra lecture de client");
 }
 //---------------------------------------------------------------------------------
 void clientReadData(Pair *pipes, void *buf, size_t size)
 {
-    readData(&(pipes->CtoO), buf, size, "client lecture de orchestra");
+    readData(&(pipes->OtoC), buf, size, "client lecture de orchestra");
 }
 
 //--------------------------------------------------------------------------------
@@ -161,7 +160,6 @@ void clientReadData(Pair *pipes, void *buf, size_t size)
         Accesseur et mutateur
    =================================  */ 
 //--------------------------------------------------------------------------------
-
 
 /*
 NE SERT A RIEN
