@@ -49,7 +49,6 @@ static void sendEOF(Pair *pipes, Connection *c)
      clientWriteData(pipes, &c, sizeof(int));
 }
 */
-
 int main(int argc, char * argv[])
 {
     if (argc < 2)
@@ -61,30 +60,32 @@ int main(int argc, char * argv[])
     Pair pipes;
     Connection connection;
     Connection response;
-
+    clientOpenPipes("pipeClientToOrchestra","pipeOrchestraToClient", &pipes);
 
     // entrée en section critique pour communiquer avec l'orchestre
     //pthread_mutex_lock(getMutex(numService));
+
     // envoi à l'orchestre du numéro du service
-    clientOpenPipes("pipeClientToOrchestra","pipeOrchestraToClient", &pipes);
     connection.request = numService;
     askConnection(&pipes, &connection);
-    clientClosePipes(&pipes);
+    
     
     // attente code de retour
-    //waitResponseOrchestra();
+    int resp = establishedConnection(&pipes, &response);
+    printf("%d\n", resp);
+    clientClosePipes(&pipes);
     // si code d'erreur
-    //if (establishedConnection()  == REQUEST_FAIL);
-    //{
-    //    myassert(establishedConnection() == REQUEST_FAIL, "Connection request has failed")
+    if (resp == REQUEST_FAIL)
+    {
+        myassert(resp == REQUEST_FAIL, "Connection request has failed");
         //     sortie de la section critique
-    //    pthread_mutex_unlock(getMutex(numService));
-    //}
+        //pthread_mutex_unlock(getMutex(numService));
+    }
     // sinon
-    //else
-    //{
+  //  else
+   // {
         //     récupération du mot de passe et des noms des 2 tubes
-    //    receive(&pipes,&response);
+        //receive(&pipes,&response);
         //     envoi d'une accusé de réception à l'orchestre
     //    connection.request = REQUEST_EOF;
     //    sendEOF(&pipes, &connection);
