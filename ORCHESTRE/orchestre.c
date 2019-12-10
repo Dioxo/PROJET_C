@@ -13,7 +13,7 @@
 #include "service_orchestre.h"
 
 #ifndef ORCHESTRE_CODES
-#define  NB_SERVICES 3
+#define  NB_SERVICES 1
 #define CODE_ACCEPT 0
 #define CODE_FIN -2
 #endif
@@ -36,10 +36,14 @@ typedef struct {
 
 void lock(int semid){
   struct sembuf buf;
-  buf.sem_num = semid;
+  buf.sem_num = 0;
   buf.sem_op = -1;
   buf.sem_flg = SEM_UNDO;
-  semop(semid, &buf, 1);
+  int res = semop(semid, &buf, 1);
+  if (res == -1) {
+    perror("");
+  }
+  assert(res != -1);
 }
 
 void createPipes(Service *service, int i);
@@ -74,14 +78,12 @@ int main(int argc, char * argv[])
       //   les clients et le service
       createPipes(&(services[i]), i);
 
-      //TODO rappeler to close fd[1] dans le fils
       // - création d'un tube anonyme pour converser (orchestre vers service)
       int res = pipe(services[i].anonymeTube.fd);
       assert(res != -1);
 
       // - un sémaphore pour que le service préviene l'orchestre de la
       //   fin d'un traitement
-      //clé de chaque semaphore basé sur le nom "S_C_X"
       services[i].key = ftok(services[i].s_c, 123456);
       assert(services[i].key != -1);
 
@@ -95,14 +97,13 @@ int main(int argc, char * argv[])
     }
 
     // lancement de chaque service
-    execFils(&services[0],  "../SERVICES/service_compression" );
-    execFils(&services[1],  "../SERVICES/service_somme" );
-    execFils(&services[2],  "../SERVICES/service_max" );
+    //execFils(&services[0],  "../SERVICES/service_compression" );
+    execFils(&services[0],  "../SERVICES/service_somme" );
+    //execFils(&services[2],  "../SERVICES/service_max" );
 
     bool enUse[3];
     while (true)
     {
-      break;
         // attente d'une demande de service du client
         int tmp = 0;
 
@@ -114,6 +115,7 @@ int main(int argc, char * argv[])
           //si 0 est en cours d'execution
           if (res == 0) {
             enUse[i] = true;
+            break;
           }else{
             enUse[i] = false;
           }
@@ -141,6 +143,8 @@ int main(int argc, char * argv[])
 
         }else{
           // sinon
+          //    Changer la valeur du semaphore
+          lock(services[tmp].semid);
           //     génération d'un mot de passe
           // mdp est entre [0 et 10000]
           int mdp = (int)(rand() / (double)RAND_MAX * (10000 - 1));
@@ -152,8 +156,6 @@ int main(int argc, char * argv[])
           //     envoi du mot de passe au service (via le tube anonyme)
           orchestreWrite(&services[tmp].anonymeTube, &mdp, sizeof(int));
 
-          //    Changer la valeur du semaphore
-          lock(services[tmp].semid);
             // TODO
           //     envoi au client d'un code d'acceptation (via le tube nommé)
           //     envoi du mot de passe au client (via le tube nommé)
@@ -163,11 +165,15 @@ int main(int argc, char * argv[])
     }
 
     // attente de la fin des traitements en cours (via les sémaphores)
+    printf("waiting\n");
     while (true) {
       //c'est 1 si le service est libre
-      if (semctl(services[0].semid, 0, GETVAL) == 1 &&
+      /*if (semctl(services[0].semid, 0, GETVAL) == 1 &&
           semctl(services[1].semid, 0, GETVAL) == 1 &&
           semctl(services[2].semid, 0, GETVAL) == 1) {
+        break;
+      }*/
+      if (semctl(services[0].semid, 0, GETVAL) == 1) {
         break;
       }
     }
@@ -200,18 +206,20 @@ void execFils(Service *service, const char *nomExecutable){
     //fermer le tube en ecriture
     close(service->anonymeTube.fd[1]);
 
-    char semid[12];
-    sprintf(semid,"%d", service->semid);
+    char key[12];
+    sprintf(key,"%d", service->key);
 
     char fd[2];
     sprintf(fd,"%d", service->anonymeTube.fd[0]);
 
-    execl(nomExecutable, nomExecutable,
-                                  semid,
-                                  fd,
-                                  service->s_c,
-                                  service->c_s,
-                                  NULL);
+    int res = execl(nomExecutable, nomExecutable,
+                                                key,
+                                                fd,
+                                                service->s_c,
+                                                service->c_s,
+                                                NULL);
+
+    assert(res != -1);
   }
 }
 
