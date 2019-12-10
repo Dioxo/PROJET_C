@@ -5,9 +5,9 @@
 // - le sémaphore pour que 2 clients ne conversent pas en même
 //   temps avec l'orchestre
 // - les deux tubes nommés pour la communication bidirectionnelle
-
+#define REQUEST_FAIL -1
+#define REQUEST_STOP 0
 #define REQUEST_ASK 1
-#define REQUEST_FAIL 0
 #define REQUEST_ACCEPT 2
 #define REQUEST_EOF 3
 

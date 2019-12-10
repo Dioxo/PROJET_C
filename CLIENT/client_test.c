@@ -11,24 +11,28 @@ int main() {
 
 
     orchestraCreatePipes(&pipes);
+
     orchestraOpenPipes("pipeClientToOrchestra","pipeOrchestraToClient", &pipes);
-    
     orchestraReadData(&pipes, &(connection.request), sizeof(int));
     printf("%d\n", connection.request);
+    
 
-/*
-    if (connection.request == REQUEST_ASK)
+    
+
+    if (connection.request != REQUEST_STOP)
     {
     	Connection reponse = {REQUEST_ACCEPT};
     	orchestraWriteData(&pipes, &reponse, sizeof(int));
     }
     else
     {
-    	printf("Error");
+    	printf("Stop the orchestra");
+    	orchestraDestroyPipes(&pipes);
 
     }
-    orchestraClosePipes(&pipes);
-*/
+    
+   
 
+    
   return EXIT_SUCCESS;
 }
