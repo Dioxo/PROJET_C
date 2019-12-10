@@ -88,7 +88,7 @@ int main(int argc, char * argv[])
       // attente d'un code de l'orchestre (via tube anonyme)
       read(fd_orchestre, &code, sizeof(int));
 
-      if(code == CODE_ERROR){
+      if(code == CODE_FIN){
         break;
       }else{
         //    réception du mot de passe de l'orchestre
