@@ -26,7 +26,7 @@ void test_config(const char *filename)
     // un appel ici à config_init doit planter
     nb = config_getNbServices();
     printf("Il y a %d service(s)\n", nb);
-    for (int i = 1; i <= nb; i++)
+    for (int i = 0; i < nb; i++)
     {
         printf("service %d : %s (%s)\n",
                i,
