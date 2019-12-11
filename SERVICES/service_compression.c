@@ -57,15 +57,20 @@ char * compression_service_computeResult(char* chaine)
   res[0] = '\0';
   int cmpt = 0;
   unsigned int i = 0;
-  for ( ; i < strlen(chaine); i++) {
+  for ( ; i < strlen(chaine); i++)
+  {
     cmpt ++;
-    if (chaine[i] != chaine[i+1]) {
+    if (chaine[i] != chaine[i+1])
+    {
       //pour le moment, je vais sur dimmensioner le tableau
       char tmp[3];
       sprintf(tmp, "%d%c", cmpt, chaine[i]);
-      if (strlen(res) == 0) {
+      if (strlen(res) == 0)
+      {
         strcpy(res, tmp);
-      }else{
+      }
+      else
+      {
         strcat(res, tmp);
       }
       cmpt = 0;
@@ -129,9 +134,12 @@ int main(int argc, char * argv[])
       // attente d'un code de l'orchestre (via tube anonyme)
       serviceRead(&anonymeTube, &code, sizeof(int));
 
-      if(code == CODE_FIN){
+      if(code == CODE_FIN)
+      {
         break;
-      }else{
+      }
+      else
+      {
         //    réception du mot de passe de l'orchestre
         serviceRead(&anonymeTube, &mdpOrchestre, sizeof(int));
 
@@ -139,11 +147,14 @@ int main(int argc, char * argv[])
         serviceReadData(&pipes, &mdpClient,sizeof(int));
 
         //si mot de passe incorrect
-        if (mdpClient != mdpOrchestre) {
+        if (mdpClient != mdpOrchestre)
+        {
           // envoi au client d'un code d'erreur
           code = CODE_ERROR;
           serviceWriteData(&pipes, &code, sizeof(int) );
-        }else{
+        }
+        else
+        {
           // envoi au client d'un code d'acceptation
           code = CODE_ACCEPT;
           serviceWriteData(&pipes, &code, sizeof(int) );

@@ -19,6 +19,7 @@
 #define CODE_FIN -2
 #endif
 
+//---------------------------------------------------------------------------------
 static void usage(const char *exeName, const char *message)
 {
     fprintf(stderr, "usage : %s <fichier config>\n", exeName);
@@ -37,8 +38,11 @@ typedef struct {
 
 
 
-void execFils(Service *service, const char *nomExecutable){
-  if (fork() == 0) {
+//---------------------------------------------------------------------------------
+void execFils(Service *service, const char *nomExecutable)
+{
+  if (fork() == 0)
+  {
     //fermer le tube en ecriture pour le service
     close(service->anonymeTube.fd[1]);
 
@@ -53,14 +57,18 @@ void execFils(Service *service, const char *nomExecutable){
                                                 NULL);
 
     assert(res != -1);
-  }else{
+  }
+  else
+  {
     //fermer le tube en lecture pour l'orchestre
     close(service->anonymeTube.fd[0]);
   }
 }
 
 
-void createPipes(Service *service, int i){
+//---------------------------------------------------------------------------------
+void createPipes(Service *service, int i)
+{
   int nameLength;
   nameLength = snprintf(NULL, 0, "../SERVICES/X_X_%d", i) + 1;
 
@@ -78,6 +86,7 @@ void createPipes(Service *service, int i){
   assert(res != -1);
 }
 
+//---------------------------------------------------------------------------------
 void destroyPipe(Service *service)
 {
 	int ret;
@@ -93,7 +102,7 @@ void destroyPipe(Service *service)
 }
 
 
-//-------------------------------------------------------
+//---------------------------------------------------------------------------------
 int main(int argc, char * argv[])
 {
     if (argc != 2)
@@ -116,7 +125,8 @@ int main(int argc, char * argv[])
     // lancement des services, avec pour chaque service :
     int nbServices = config_getNbServices();
     Service services[nbServices];
-    for (int i = 0; i < nbServices; i++) {
+    for (int i = 0; i < nbServices; i++)
+    {
       // - création de deux tubes nommés pour les communications entre
       //   les clients et le service
       createPipes(&(services[i]), i);
@@ -140,7 +150,8 @@ int main(int argc, char * argv[])
     }
 
     // lancement de chaque service
-    for (int i = 0; i < nbServices; i++) {
+    for (int i = 0; i < nbServices; i++)
+    {
       execFils(&services[i], config_getExeName(i));
     }
     //execFils(&services[0],  "../SERVICES/service_compression" );
@@ -156,36 +167,48 @@ int main(int argc, char * argv[])
         // détecter la fin des traitements lancés précédemment via
         // les sémaphores dédiés (attention on n'attend pas la
         // fin des traitement, on note juste ceux qui sont finis)
-        for (int i = 0; i < nbServices; i++) {
+        for (int i = 0; i < nbServices; i++)
+        {
           int res = semctl(services[i].semid, 0, GETVAL);
           //si 0 est en cours d'execution
-          if (res == 0) {
+          if (res == 0)
+          {
             enUse[i] = true;
-          }else{
+          }
+          else
+          {
             enUse[i] = false;
           }
+
         }
 
         //TODO analyse de la demande du client
 
         // si ordre de fin
-        if (tmp == CODE_FIN) {
+        if (tmp == CODE_FIN)
+        {
           //TODO
 
           //    retour d'un code d'acceptation
 
           //     sortie de la boucle
           break;
-        }else if(!config_isServiceOpen(tmp)){
+        }
+        else if(!config_isServiceOpen(tmp))
+        {
           // sinon si service non ouvert
           //     retour d'un code d'erreur
 
-        }else if (enUse[tmp]) {
+        }
+        else if (enUse[tmp])
+        {
           //TODO
           // sinon si service déjà en cours de traitement
           //     retour d'un code d'erreur
           break;
-        }else{
+        }
+        else
+        {
           // sinon
           //    Changer la valeur du semaphore
           orchestreLock(services[tmp].semid);
@@ -210,11 +233,15 @@ int main(int argc, char * argv[])
 
     // attente de la fin des traitements en cours (via les sémaphores)
     int cmpt = 0;
-    while(cmpt < nbServices){
+    while(cmpt < nbServices)
+    {
       //si un service finit, regarder si le prochain a fini aussi
-      if (semctl(services[cmpt].semid, 0, GETVAL) == 1) {
+      if (semctl(services[cmpt].semid, 0, GETVAL) == 1)
+      {
         cmpt++;
-      }else{
+      }
+      else
+      {
         //sleep pour ne pas chercher trop de fois si le service à fini
         sleep(3);
       }
@@ -222,18 +249,21 @@ int main(int argc, char * argv[])
 
     // envoi à chaque service d'un code de fin
     int code = CODE_FIN;
-    for (int i = 0; i < nbServices; i++) {
+    for (int i = 0; i < nbServices; i++)
+    {
       orchestreWrite(&services[i].anonymeTube, &code, sizeof(int));
     }
 
     // attente de la terminaison des processus services
-    for (int i = 0; i < nbServices; i++) {
+    for (int i = 0; i < nbServices; i++)
+    {
       wait(NULL);
     }
 
     // destruction des tubes
     //destruction de semaphores
-    for (int i = 0; i < nbServices; i++) {
+    for (int i = 0; i < nbServices; i++)
+    {
       close(services[i].anonymeTube.fd[0]);
       int res = semctl(services[i].semid, 0, IPC_RMID);
       assert(res != -1);
