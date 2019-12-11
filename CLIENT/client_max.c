@@ -75,5 +75,5 @@ void client_max_receiveResult(Pair *pipes,  int argc, char * argv[])
     myassert(argc < 3,"nombre paramètres incorrect");
     int max;
     clientReadData(pipes, &max, sizeof(float));
-    printf("%s : %d", argv[1], max);
+    printf("%s %d\n", argv[1], max);
 }

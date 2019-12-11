@@ -7,11 +7,19 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/sem.h>
+
+
 
 #include "myassert.h"
 
 #include "client_orchestre.h"
 
+/* ===================================================================================
+                                   GESTION DES PIPES
+   ===================================================================================   */ 
 
 
 //---------------------------------------------------------------------------------
@@ -169,3 +177,103 @@ int main()
 }
 
 */
+
+/* ===================================================================================
+                                   GESTION DES SEMAPHORES
+   ===================================================================================   */ 
+
+struct SemaphoreP
+{
+    int nbSem;
+    int semId;
+};
+
+//--------------------------------------------------------------------------------
+/* ============================
+    Constructeur et Destructeur
+   ============================   */ 
+//--------------------------------------------------------------------------------
+
+static key_t token()
+{
+    //Constantes définies dans le .h
+    return ftok(MON_FICHIER, MON_ID);
+}
+//--------------------------------------------------------------------------------
+Semaphore createSema(int val)
+{
+    Semaphore self = malloc(sizeof(struct SemaphoreP));
+    self->NbSem =1;
+    key_t tok = token();
+    self->semId = semget(tok, self->nbSem, IPC_CREAT | 0641);
+    myassert(self->semId != -1, "Création du sémaphore");
+
+    int ret = semctl(self->semId, 0, SETVAL, val);
+    myassert(self->semId != -1, "Initiatisation du sémaphore");
+
+    return self;
+}
+//--------------------------------------------------------------------------------
+void destroySema(Semaphore *self)
+{
+    int ret = semctl((*self)->semId, -1, IPC_RMID);
+    myassert(ret != -1, "Destruction du Semaphore");
+    free(*self);
+    *self = NULL;
+}
+
+//--------------------------------------------------------------------------------
+/* ============================
+    Opération sur un semaphore
+   ============================   */ 
+//--------------------------------------------------------------------------------
+static int OperationSema(Semaphore self, int num, int val)
+{
+    struct sembuf sops;
+    sops.sem_num = num;
+    sops.sem_op = val;
+    sops.sem_flg = 0;
+
+    return semop(self->semId, &sops, 1);
+}
+//--------------------------------------------------------------------------------
+void waitSema(Semaphore self)
+{
+    int ret = OperationSema(self, 0 , 0);
+    myassert(ret != -1, "Erreur : 0 sur le semaphore");
+}
+//--------------------------------------------------------------------------------
+void vSema(Semaphore self)
+{
+    int ret = OperationSema(self, 0, 1);
+    myassert(ret != -1, "Erreur : +1 sur le semaphore");
+}
+//--------------------------------------------------------------------------------
+void pSema(Semaphore self)
+{
+    int ret = OperationSema(self,0 -1);
+    myassert(ret != -1, "Erreur : -1 sur le semaphore");
+}
+//--------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------
+/* ============================
+      Accesseur et mutateur
+   ============================   */ 
+//--------------------------------------------------------------------------------
+int getValSema(Semaphore self)
+{
+    int ret = semctl(self->semId, 0, GETVAL);
+    myassert(ret != -1, "Erreur : Lecture semaphore");
+    return ret;
+}
+//--------------------------------------------------------------------------------
+void setValSema(Semaphore self, int val)
+{
+    int ret = semctl(self->semId, 0, SETVAL, val);
+    myassert(ret != -1, "Erreur : Ecriture semaphore");
+}
+//--------------------------------------------------------------------------------
+
+
+

@@ -23,9 +23,11 @@
 void client_somme_sendData(Pair *pipes, int argc, char * argv[])
 {
 
-	myassert(argc < 3,"nombre paramètres incorrect");
+
+	myassert(argc == 3,"nombre paramètres incorrect");
 	int a = atoi(argv[0]);
 	int b = atoi(argv[1]);
+	printf("%d %d\n",a,b);
 	clientWriteData(pipes, &a, sizeof(int));
 	clientWriteData(pipes, &b, sizeof(int));
 
@@ -40,10 +42,10 @@ void client_somme_sendData(Pair *pipes, int argc, char * argv[])
 // Cette fonction analyse argv pour savoir quoi faire des résultats
 void client_somme_receiveResult(Pair *pipes, int argc, char * argv[])
 {
-	myassert(argc < 3,"nombre paramètres incorrect");
-	int max;
-	clientReadData(pipes, &max, sizeof(float));
-	printf("%s : %d", argv[4], max);
+	myassert(argc == 3,"nombre paramètres incorrect");
+	int sum;
+	clientReadData(pipes, &sum, sizeof(int));
+	printf("%s %d\n", argv[3], sum);
 }
     // par exemple on décide d'afficher le résultat et argv[4] contient
     // une chaine à afficher avant le résultat

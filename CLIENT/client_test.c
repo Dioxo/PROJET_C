@@ -21,6 +21,11 @@ int main() {
     co_Response data;
 
 
+    Semaphore mutex;
+    mutex = createSema(1);
+
+
+
     co_orchestraCreatePipes(&pipes);
 
     co_orchestraOpenPipes("pipeClientToOrchestra","pipeOrchestraToClient", &pipes);
@@ -32,6 +37,8 @@ int main() {
     data.lengthStoC = 8;
     data.CtoS = "Totototo";
     data.StoC = "otototoT";
+
+
 
     
 

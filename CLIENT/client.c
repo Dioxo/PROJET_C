@@ -10,7 +10,7 @@
 #include "myassert.h"
 
 
-
+	
 #include "client_orchestre.h"
 #include "client_service.h"
 
@@ -57,33 +57,38 @@ static void sendEOF(co_Pair *pipes)
 }
 
 
-static void getNumbers(int argc, char *argv[])
+static void getNumbers(int argc ,char *argv[])
 {
 	const int LENGTH = 10;
     char n[LENGTH];
     printf("Entrez un nombre : \n");
-    fgets(n, LENGTH-1, stdin);
-    strcpy(argv[argc-1],n);
-
+    fgets(n,LENGTH-1,stdin);
+    n[strlen(n)-1] = '\0';
+    argv[argc] = (char *) malloc ((strlen(n)) * sizeof(char)); 
+    strcpy(argv[argc],n);
 }
 
-static void getPath(int argc, char *argv[])
+static void getPath(int argc ,char *argv[])
 {
 	const int LENGTH_PATH= 100;
     char path[LENGTH_PATH];
     printf("Entrez le chemin du fichier : \n");
     fgets(path, LENGTH_PATH-1, stdin);
-    strcpy(argv[argc-1],path);
+    path[strlen(path)-1] = '\0';
+    argv[argc] = (char *) malloc ((strlen(path)) * sizeof(char)); 
+    strcpy(argv[argc],path);
 
 }
 
-static void getThread(int argc, char *argv[])
+static void getThread(int argc ,char *argv[])
 {
 	const int LENGTH_THREAD=5;
     char thread[LENGTH_THREAD];
     printf("Entrez le nombre de thread : \n");
     fgets(thread, LENGTH_THREAD-1, stdin);
-    argv[argc-1] = thread;
+    thread[strlen(thread)-1] = '\0';
+    argv[argc] = (char *) malloc ((strlen(thread)) * sizeof(char)); 
+    strcpy(argv[argc],thread);
 }
 
 int main(int argc, char * argv[])
@@ -99,10 +104,10 @@ int main(int argc, char * argv[])
     co_Connection confirm;
     co_Response response;
     co_clientOpenPipes("pipeClientToOrchestra","pipeOrchestraToClient", &pipes);
+    Semaphore mutex = createSema(1);
 
     // entrée en section critique pour communiquer avec l'orchestre
-    //pthread_mutex_lock(getMutex(numService));
-
+    pSema(mutex);
     // envoi à l'orchestre du numéro du service
     connection.request = numService;
     askConnection(&pipes, &connection);
@@ -112,9 +117,9 @@ int main(int argc, char * argv[])
     // si code d'erreur
     if (resp == REQUEST_FAIL)
     {
-        myassert(resp == REQUEST_FAIL, "Connection request has failed");
         //     sortie de la section critique
-        //pthread_mutex_unlock(getMutex(numService));
+        vSema(mutex);
+
     }
     // sinon
     else
@@ -125,10 +130,9 @@ int main(int argc, char * argv[])
         //     envoi d'une accusé de réception à l'orchestre
         sendEOF(&pipes);
         //     sortie de la section critique
-        //pthread_mutex_unlock(getMutex(numService));
+        vSema(mutex);
         //     envoi du mot de passe au service
         Pair s_pipes;
-        printf("==================Passage au service=======================\n");
         clientOpenPipes(response.StoC, response.CtoS , &s_pipes);
      	clientWriteData(&s_pipes, &(response.password), sizeof(int));
         //     attente de l'accusé de réception du service
@@ -140,29 +144,30 @@ int main(int argc, char * argv[])
         switch(numService)
         {
         	case 1:
-        	argc = 2;
-        	argv = (char **) malloc(argc * sizeof(char*)); 
-        	getNumbers(1, &argv[argc]);
-        	getNumbers(2, &argv[argc]);
-        	client_somme_sendData(&s_pipes, argc, &argv[argc]);
-        	client_somme_receiveResult(&s_pipes, argc, &argv[argc]);
+        	argc = 3;
+        	argv = malloc(argc * sizeof(char *)); 
+        	getNumbers(0,argv);
+        	getNumbers(1,argv);
+        	argv[3] = "La somme vaut :";
+        	client_somme_sendData(&s_pipes, argc, argv);
+        	client_somme_receiveResult(&s_pipes, argc, argv);
         	break;
 
         	case 2:
         	argc = 1;
         	argv = (char **) malloc(argc * sizeof(char*)); 
-        	getPath(1, &argv[argc]);
-        	client_compression_sendData(&s_pipes, argc, &argv[argc]);
-        	client_compression_receiveResult(&s_pipes, argc, &argv[argc]);
+        	getPath(0,argv);
+        	client_compression_sendData(&s_pipes, argc, argv);
+        	client_compression_receiveResult(&s_pipes, argc, argv);
         	break;
 
         	case 3:
         	argc = 2;
         	argv = (char **) malloc(argc * sizeof(char*));
-        	getThread(1, &argv[argc]);
-        	getPath(2, &argv[argc]);
-        	client_max_sendData(&s_pipes, argc, &argv[argc]);
-        	client_max_receiveResult(&s_pipes, argc, &argv[argc]);
+        	getThread(0,argv);
+        	getPath(1,argv);
+        	client_max_sendData(&s_pipes, argc, argv);
+        	client_max_receiveResult(&s_pipes, argc, argv);
         	break;
         }
         free(*argv);	

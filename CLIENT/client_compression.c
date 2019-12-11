@@ -21,8 +21,8 @@ static int getsize(int fd)
 {
 	int sz;
     char *f;
-	while ((sz = read(fd, &f, sizeof(char))) > 0);
-	return sz;	
+    while ((sz = read(fd, &f, sizeof(char))) > 0);
+    return sz;  	
 }
 
 static void readData(int fd, int size, char *str)
@@ -43,14 +43,12 @@ void client_compression_sendData(Pair *pipes, int argc, char * argv[])
 {
     // par exemple argv[2] est le nom du fichier contenant le texte
     // à envoyer pour compression
-    myassert(argc < 1,"nombre paramètres incorrect");
+    myassert(argc == 1,"nombre paramètres incorrect");
     int fd;
-    
-    
-    
-    fd = open(argv[2], O_RDONLY | O_CREAT, 0644);
+    fd = open(argv[2], O_RDONLY , 0644);
     myassert(fd == -1 ,"ouverture impossible");
     int size = getsize(fd);
+    printf("%d\n",size);
     close(fd);
 
     char *str = (char *) malloc((size + 1) * sizeof(char));
@@ -71,7 +69,7 @@ void client_compression_sendData(Pair *pipes, int argc, char * argv[])
 // Cette fonction analyse argv pour savoir quoi faire des résultats
 void client_compression_receiveResult(Pair *pipes, int argc, char * argv[])
 {
-	myassert(argc < 3,"nombre paramètres incorrect");
+	myassert(argc == 1,"nombre paramètres incorrect");
     // par exemple on décide de sauvegarder le résultat dans un fichier et
     // argv[3] est le nom du fichier où écrire le texte compressé
     

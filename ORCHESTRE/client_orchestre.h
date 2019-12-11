@@ -11,6 +11,10 @@
 #define REQUEST_ACCEPT 2
 #define REQUEST_EOF 3
 
+
+#define MON_FICHIER "client_orchestre.h"
+#define MON_ID 5;
+
 typedef struct 
 {
     char *name;
@@ -37,7 +41,9 @@ typedef struct
     char *StoC;
 } co_Response;
 
-
+/* ===================================================================================
+                                   GESTION DES PIPES
+   ===================================================================================   */ 
 
 /* ============================
  	Constructeur et Destructeur
@@ -75,9 +81,38 @@ void co_orchestraReadData(co_Pair *pipes, void *buf, size_t size);
 		Accesseur et mutateur
    =================================  */ 
 
-//pthread_mutex_t getMutex(int numService);
 
+/* ===================================================================================
+                                   GESTION DES SEMAPHORES
+   ===================================================================================   */ 
 
+/* ============================
+        Abstraction pointeur
+   ============================   */ 
 
+struct SemaphoreP;
+typedef struct SemaphoreP *Semaphore;
+
+/* ============================
+  Constructeur et Destructeur
+   ============================   */ 
+
+Semaphore createSema(int val);
+void destroySema(Semaphore *self);
+
+/* ============================
+    Opération sur un semaphore
+   ============================   */ 
+
+void waitSema(Semaphore self);
+void vSema(Semaphore self);
+void pSema(Semaphore self);
+
+/* ============================
+      Accesseur et mutateur
+   ============================   */ 
+
+int getValSema(Semaphore self);
+void setValSema(Semaphore self, int val);
 
 #endif
