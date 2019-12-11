@@ -31,6 +31,8 @@ typedef struct
 typedef struct 
 {
     int password;
+    int lengthCtoO;
+    int lengthOtoC;
     char *CtoO;
     char *OtoC;
 } Response;
@@ -41,41 +43,38 @@ typedef struct
  	Constructeur et Destructeur
    ============================   */ 
 
-void orchestraCreatePipes(Pair *pipes);
-void orchestraCreateThread(Pair *pipes);
+void co_orchestraCreatePipes(Pair *pipes);
+void co_orchestraCreateThread(Pair *pipes);
 
-void orchestraDestroyPipes(Pair *pipes);
+void co_orchestraDestroyPipes(Pair *pipes);
 
 /* =================================
  	Ouverture et fermeture des tubes
    =================================  */ 
 
-void orchestraOpenPipes(const char *nameCtoO, const char *nameOtoC, Pair *pipes);
-void orchestraClosePipes(Pair *pipes);
-void clientOpenPipes(const char *nameCtoO, const char *nameOtoC, Pair *pipes);
-void clientClosePipes(Pair *pipes);
+void co_orchestraOpenPipes(const char *nameCtoO, const char *nameOtoC, Pair *pipes);
+void co_orchestraClosePipes(Pair *pipes);
+void co_clientOpenPipes(const char *nameCtoO, const char *nameOtoC, Pair *pipes);
+void co_clientClosePipes(Pair *pipes);
 
 /* =================================
  		Envois et réceptions
    =================================  */ 
 
-void clientWriteData(Pair *pipes, const void *buf, size_t size);
-void orchestraWriteData(Pair *pipes, const void *buf, size_t size);
-void clientReadData(Pair *pipes, void *buf, size_t size);
-void orchestraReadData(Pair *pipes, void *buf, size_t size);
+void co_clientWriteData(Pair *pipes, const void *buf, size_t size);
+void co_orchestraWriteData(Pair *pipes, const void *buf, size_t size);
+void co_clientReadData(Pair *pipes, void *buf, size_t size);
+void co_orchestraReadData(Pair *pipes, void *buf, size_t size);
 
 /* =================================
  		Attente d'une réponse
    =================================  */ 
 
-int orchestraWaitResponse();
-int clientWaitResponse();
 
 /* =================================
 		Accesseur et mutateur
    =================================  */ 
 
-Pair getPipes();
 //pthread_mutex_t getMutex(int numService);
 
 

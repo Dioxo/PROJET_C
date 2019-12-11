@@ -30,7 +30,7 @@ static void createPipe(const char *basename, const char *msg , NamedPipe *pipe)
     myassert(ret == 0, msg);
 }
 //---------------------------------------------------------------------------------
-void orchestraCreatePipes(Pair *pipes)
+void co_orchestraCreatePipes(Pair *pipes)
 {
 	createPipe("pipeClientToOrchestra", "Création tube CtoO", &(pipes->CtoO));
 	createPipe("pipeOrchestraToClient", "Création tube OtoC", &(pipes->OtoC));
@@ -50,7 +50,7 @@ static void destroyPipe(const char *msg, NamedPipe *pipe)
     pipe->name = NULL;
 }
 //---------------------------------------------------------------------------------
-void orchestraDestroyPipes(Pair *pipes)
+void co_orchestraDestroyPipes(Pair *pipes)
 {
     destroyPipe("destruction tube CtoO", &(pipes->CtoO));
     destroyPipe("destruction tube OtoC", &(pipes->OtoC));
@@ -69,16 +69,16 @@ static void openPipe(const char *name, int flag, const char *msg, NamedPipe *pip
     myassert(pipe->fd != -1, msg);
 }
 //---------------------------------------------------------------------------------
-void orchestraOpenPipes(const char *nameCtoO, const char *nameOtoC, Pair *pipes)
+void co_orchestraOpenPipes(const char *nameCtoO, const char *nameOtoC, Pair *pipes)
 {
-	openPipe(nameCtoO, O_RDONLY, "orchestra ouverture tube CtoO", &(pipes->CtoO));
-	openPipe(nameOtoC, O_WRONLY, "orchestra ouverture tube OtoC", &(pipes->OtoC));
+	openPipe(nameOtoC, O_WRONLY, "client->orchestra ouvert en ecriture", &(pipes->OtoC));
+	openPipe(nameCtoO, O_RDONLY, "orchestra->client ouvert en lecture", &(pipes->CtoO));
 }
 //---------------------------------------------------------------------------------
-void clientOpenPipes(const char *nameCtoO, const char *nameOtoC, Pair *pipes)
+void co_clientOpenPipes(const char *nameCtoO, const char *nameOtoC, Pair *pipes)
 {
-	openPipe(nameCtoO, O_WRONLY, "client ouverture tube CtoO", &(pipes->CtoO));
-	openPipe(nameOtoC, O_RDONLY, "client ouverture tube OtoC", &(pipes->OtoC));
+	openPipe(nameOtoC, O_RDONLY, "client->orchestra ouvert en lecture", &(pipes->OtoC));
+	openPipe(nameCtoO, O_WRONLY, "orchestra->client ouverture en ecriture", &(pipes->CtoO));
 
 }
 
@@ -95,13 +95,13 @@ static void closePipe(const char *msg, NamedPipe *pipe)
     pipe->fd = -1;
 }
 //---------------------------------------------------------------------------------
-void orchestraClosePipes(Pair *pipes)
+void co_orchestraClosePipes(Pair *pipes)
 {
 	closePipe("orchestra fermeture tube CtoO",&(pipes->CtoO));
 	closePipe("orchestra fermeture tube OtoC", &(pipes->OtoC));
 }
 //---------------------------------------------------------------------------------
-void clientClosePipes(Pair *pipes)
+void co_clientClosePipes(Pair *pipes)
 {
 	closePipe("client fermeture tube CtoO",&(pipes->CtoO));
 	closePipe("client fermeture tube OtoC", &(pipes->OtoC));
@@ -119,14 +119,14 @@ static void writeData(NamedPipe *pipe, const void *buf, size_t size, const char 
     myassert((size_t)ret == size, msg);
 }
 //---------------------------------------------------------------------------------
-void orchestraWriteData(Pair *pipes, const void *buf, size_t size)
+void co_orchestraWriteData(Pair *pipes, const void *buf, size_t size)
 {
-	writeData(&(pipes->OtoC), buf, size, "orchestra écriture vers client");
+	writeData(&(pipes->OtoC), buf, size, "orchestra ouvert en écriture/client ouvert en lecture");
 }
 //---------------------------------------------------------------------------------
-void clientWriteData(Pair *pipes, const void *buf, size_t size)
+void co_clientWriteData(Pair *pipes, const void *buf, size_t size)
 {
-	writeData(&(pipes->CtoO), buf, size, "client écriture vers orchestra");
+	writeData(&(pipes->CtoO), buf, size, "client ouvert en écriture/orchestra ouvert en lecture");
 }
 
 //---------------------------------------------------------------------------------
@@ -138,12 +138,12 @@ static void readData(NamedPipe *pipe, void *buf, size_t size, const char *msg)
     myassert((size_t)ret == size, msg);
 }
 //---------------------------------------------------------------------------------
-void orchestraReadData(Pair *pipes, void *buf, size_t size)
+void co_orchestraReadData(Pair *pipes, void *buf, size_t size)
 {
     readData(&(pipes->CtoO), buf, size, "orchestra lecture de client");
 }
 //---------------------------------------------------------------------------------
-void clientReadData(Pair *pipes, void *buf, size_t size)
+void co_clientReadData(Pair *pipes, void *buf, size_t size)
 {
     readData(&(pipes->OtoC), buf, size, "client lecture de orchestra");
 }
