@@ -10,6 +10,9 @@
 #include <unistd.h>
 #include <assert.h>
 
+
+#define SERVICE_EOF 4
+
 // Ici toutes les communications entre les services et les clients :
 // - les deux tubes nommés pour la communication bidirectionnelle
 typedef struct {
@@ -53,9 +56,6 @@ void serviceReadData(Pair *pipes, void *buf, size_t size);
 /* =================================
  		Attente d'une réponse
    =================================  */
-
-int serviceWaitResponse();
-int clientWaitResponse();
 
 
 #endif

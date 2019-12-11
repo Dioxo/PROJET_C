@@ -5,32 +5,55 @@
 
 #include "client_orchestre.h"
 
+static void send(co_Pair *pipes, co_Response *response)
+{
+    co_orchestraWriteData(pipes, &(response->password), sizeof(int));
+    co_orchestraWriteData(pipes, &(response->lengthCtoS), sizeof(int));
+    co_orchestraWriteData(pipes, &(response->lengthStoC), sizeof(int));
+    co_orchestraWriteData(pipes, response->CtoS, (response->lengthStoC) * sizeof(char));
+    co_orchestraWriteData(pipes, response->CtoS, (response->lengthCtoS) * sizeof(char));
+}
+
+
 int main() {
-	Pair pipes;
-    Connection connection;
+	co_Pair pipes;
+    co_Connection connection;
+    co_Response data;
 
 
-    orchestraCreatePipes(&pipes);
+    co_orchestraCreatePipes(&pipes);
 
-    orchestraOpenPipes("pipeClientToOrchestra","pipeOrchestraToClient", &pipes);
-    orchestraReadData(&pipes, &(connection.request), sizeof(int));
+    co_orchestraOpenPipes("pipeClientToOrchestra","pipeOrchestraToClient", &pipes);
+    co_orchestraReadData(&pipes, &(connection.request), sizeof(int));
     printf("%d\n", connection.request);
-    
+
+    data.password  = 123456;
+    data.lengthCtoS = 8;
+    data.lengthStoC = 8;
+    data.CtoS = "Totototo";
+    data.StoC = "otototoT";
 
     
 
     if (connection.request != REQUEST_STOP)
     {
-    	Connection reponse = {REQUEST_ACCEPT};
-    	orchestraWriteData(&pipes, &reponse, sizeof(int));
+
+    	co_Connection response = {REQUEST_ACCEPT};
+    	co_orchestraWriteData(&pipes, &response, sizeof(int));
+        //
+        printf("Orchestre receive : %d\n", connection.request);
+        send(&pipes, &data);
+        int ack;
+        co_orchestraReadData(&pipes, &(ack), sizeof(int)); 
+        printf("Accusé de reception : %d\n", ack);
     }
     else
     {
     	printf("Stop the orchestra");
-    	orchestraDestroyPipes(&pipes);
+    	
 
     }
-    
+    //co_orchestraDestroyPipes(&pipes);
    
 
     

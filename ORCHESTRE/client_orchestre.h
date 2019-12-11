@@ -15,25 +15,27 @@ typedef struct
 {
     char *name;
     int fd;
-} NamedPipe;
+} co_NamedPipe;
 
 typedef struct 
 {
-    NamedPipe CtoO;
-    NamedPipe OtoC;
-} Pair;
+    co_NamedPipe CtoO;
+    co_NamedPipe OtoC;
+} co_Pair;
 
 typedef struct 
 {
     int request;     
-} Connection;
+} co_Connection;
 
 typedef struct 
 {
     int password;
-    char *CtoO;
-    char *OtoC;
-} Response;
+    int lengthCtoS;
+    int lengthStoC;
+    char *CtoS;
+    char *StoC;
+} co_Response;
 
 
 
@@ -41,41 +43,38 @@ typedef struct
  	Constructeur et Destructeur
    ============================   */ 
 
-void orchestraCreatePipes(Pair *pipes);
-void orchestraCreateThread(Pair *pipes);
+void co_orchestraCreatePipes(co_Pair *pipes);
+void co_orchestraCreateThread(co_Pair *pipes);
 
-void orchestraDestroyPipes(Pair *pipes);
+void co_orchestraDestroyPipes(co_Pair *pipes);
 
 /* =================================
  	Ouverture et fermeture des tubes
    =================================  */ 
 
-void orchestraOpenPipes(const char *nameCtoO, const char *nameOtoC, Pair *pipes);
-void orchestraClosePipes(Pair *pipes);
-void clientOpenPipes(const char *nameCtoO, const char *nameOtoC, Pair *pipes);
-void clientClosePipes(Pair *pipes);
+void co_orchestraOpenPipes(const char *nameCtoO, const char *nameOtoC, co_Pair *pipes);
+void co_orchestraClosePipes(co_Pair *pipes);
+void co_clientOpenPipes(const char *nameCtoO, const char *nameOtoC, co_Pair *pipes);
+void co_clientClosePipes(co_Pair *pipes);
 
 /* =================================
  		Envois et réceptions
    =================================  */ 
 
-void clientWriteData(Pair *pipes, const void *buf, size_t size);
-void orchestraWriteData(Pair *pipes, const void *buf, size_t size);
-void clientReadData(Pair *pipes, void *buf, size_t size);
-void orchestraReadData(Pair *pipes, void *buf, size_t size);
+void co_clientWriteData(co_Pair *pipes, const void *buf, size_t size);
+void co_orchestraWriteData(co_Pair *pipes, const void *buf, size_t size);
+void co_clientReadData(co_Pair *pipes, void *buf, size_t size);
+void co_orchestraReadData(co_Pair *pipes, void *buf, size_t size);
 
 /* =================================
  		Attente d'une réponse
    =================================  */ 
 
-int orchestraWaitResponse();
-int clientWaitResponse();
 
 /* =================================
 		Accesseur et mutateur
    =================================  */ 
 
-Pair getPipes();
 //pthread_mutex_t getMutex(int numService);
 
 
