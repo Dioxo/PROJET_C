@@ -6,6 +6,9 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <assert.h>
+#include <sys/ipc.h>
+#include <sys/sem.h>
+
 
 #ifndef SERVICE_ORCHESTRE_H
 #define SERVICE_ORCHESTRE_H
@@ -14,11 +17,19 @@
 // - le tube anonyme pour que l'orchestre envoie des données au service
 // - le sémaphore pour que  le service indique à l'orchestre la fin
 //   d'un traitement
-
+#define  PROJET_ID 123456
 
 typedef struct {
     int fd[2];
 } AnonymeTube;
+
+/*
+  ============================================
+        OPERATIONS SUR LES SEMAPHORES
+  ============================================
+*/
+void orchestreLock(int semid);
+void serviceUnlock(int semid);
 
 /* =================================
  		Envois et réceptions

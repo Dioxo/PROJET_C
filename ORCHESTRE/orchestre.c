@@ -1,3 +1,5 @@
+#define  _XOPEN_SOURCE
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -34,24 +36,63 @@ typedef struct {
   int semid;
 } Service;
 
-void lock(int semid){
-  struct sembuf buf;
-  buf.sem_num = 0;
-  buf.sem_op = -1;
-  buf.sem_flg = SEM_UNDO;
-  int res = semop(semid, &buf, 1);
-  if (res == -1) {
-    perror("");
+
+
+void execFils(Service *service, const char *nomExecutable){
+  if (fork() == 0) {
+    //fermer le tube en ecriture pour le service
+    close(service->anonymeTube.fd[1]);
+
+    char fd[2];
+    sprintf(fd,"%d", service->anonymeTube.fd[0]);
+
+    int res = execl(nomExecutable, nomExecutable,
+                                                service->s_c,  //clé du semaphore
+                                                fd,            //descripteur tube
+                                                service->s_c,  //nom tube nommée
+                                                service->c_s,  //nom tube nommée
+                                                NULL);
+
+    assert(res != -1);
+  }else{
+    //fermer le tube en lecture pour l'orchestre
+    close(service->anonymeTube.fd[0]);
   }
+}
+
+
+void createPipes(Service *service, int i){
+  int nameLength;
+  nameLength = snprintf(NULL, 0, "../SERVICES/X_X_%d", i) + 1;
+
+  service->c_s = malloc(sizeof(char) * nameLength);
+  sprintf(service->c_s, "../SERVICES/C_S_%d" , i);
+
+  service->s_c = malloc(sizeof(char) * nameLength);
+  sprintf(service->s_c, "../SERVICES/S_C_%d" , i);
+
+  //creation tube c <=> s
+  int res = mkfifo(service->s_c, 0644);
+  assert(res != -1);
+
+  res = mkfifo(service->c_s, 0644);
   assert(res != -1);
 }
 
-void createPipes(Service *service, int i);
+void destroyPipe(Service *service)
+{
+	int ret;
+  ret = unlink(service->c_s);
+	assert(ret == 0);
+	free(service->c_s);
+	service->c_s = NULL;
 
+  ret = unlink(service->s_c);
+  assert(ret == 0);
+  free(service->s_c);
+  service->s_c = NULL;
+}
 
-void destroyPipe(Service *service);
-
-void execFils(Service *service, const char *nomExecutable);
 
 //-------------------------------------------------------
 int main(int argc, char * argv[])
@@ -84,11 +125,11 @@ int main(int argc, char * argv[])
 
       // - un sémaphore pour que le service préviene l'orchestre de la
       //   fin d'un traitement
-      services[i].key = ftok(services[i].s_c, 123456);
+      services[i].key = ftok(services[i].s_c , PROJET_ID);
       assert(services[i].key != -1);
 
       // id de chaque semaphore
-      services[i].semid = semget(services[i].key, 1, 0641 | IPC_CREAT);
+      services[i].semid = semget(services[i].key, 1, 0660 | IPC_CREAT);
       assert(services[i].semid != -1);
 
       //initialiser le semaphore pour faire d'exclusion mutuelle
@@ -115,7 +156,6 @@ int main(int argc, char * argv[])
           //si 0 est en cours d'execution
           if (res == 0) {
             enUse[i] = true;
-            break;
           }else{
             enUse[i] = false;
           }
@@ -132,6 +172,7 @@ int main(int argc, char * argv[])
           //     sortie de la boucle
           break;
         }else if(enUse[tmp]){
+          break;
           //TODO
           // sinon si service non ouvert
           //     retour d'un code d'erreur
@@ -144,7 +185,7 @@ int main(int argc, char * argv[])
         }else{
           // sinon
           //    Changer la valeur du semaphore
-          lock(services[tmp].semid);
+          orchestreLock(services[tmp].semid);
           //     génération d'un mot de passe
           // mdp est entre [0 et 10000]
           int mdp = (int)(rand() / (double)RAND_MAX * (10000 - 1));
@@ -181,7 +222,9 @@ int main(int argc, char * argv[])
     // envoi à chaque service d'un code de fin
     int code = CODE_FIN;
     for (int i = 0; i < NB_SERVICES; i++) {
+      //si cette ligne posse de problemes avec valgrind, commenter alors
       orchestreWrite(&services[i].anonymeTube, &code, sizeof(int));
+
     }
 
     // attente de la terminaison des processus services
@@ -192,67 +235,11 @@ int main(int argc, char * argv[])
     // destruction des tubes
     //destruction de semaphores
     for (int i = 0; i < NB_SERVICES; i++) {
+      close(services[i].anonymeTube.fd[0]);
       int res = semctl(services[i].semid, 0, IPC_RMID);
       assert(res != -1);
       destroyPipe(&services[i]);
     }
 
     return EXIT_SUCCESS;
-}
-
-
-void execFils(Service *service, const char *nomExecutable){
-  if (fork() == 0) {
-    //fermer le tube en ecriture
-    close(service->anonymeTube.fd[1]);
-
-    char key[12];
-    sprintf(key,"%d", service->key);
-
-    char fd[2];
-    sprintf(fd,"%d", service->anonymeTube.fd[0]);
-
-    int res = execl(nomExecutable, nomExecutable,
-                                                key,
-                                                fd,
-                                                service->s_c,
-                                                service->c_s,
-                                                NULL);
-
-    assert(res != -1);
-  }
-}
-
-
-void createPipes(Service *service, int i){
-  int nameLength;
-  nameLength = snprintf(NULL, 0, "../SERVICES/X_X_%d", i) + 1;
-
-  service->c_s = malloc(sizeof(char) * nameLength);
-  sprintf(service->c_s, "../SERVICES/C_S_%d" , i);
-
-  service->s_c = malloc(sizeof(char) * nameLength);
-  sprintf(service->s_c, "../SERVICES/S_C_%d" , i);
-
-  //creation tube c <=> s
-  int res = mkfifo(service->c_s, 0644);
-  assert(res != -1);
-
-  //creation tube c <=> s
-  res = mkfifo(service->s_c, 0644);
-  assert(res != -1);
-}
-
-void destroyPipe(Service *service)
-{
-	int ret;
-  ret = unlink(service->c_s);
-	assert(ret == 0);
-	free(service->c_s);
-	service->c_s = NULL;
-
-  ret = unlink(service->s_c);
-  assert(ret == 0);
-  free(service->s_c);
-  service->s_c = NULL;
 }

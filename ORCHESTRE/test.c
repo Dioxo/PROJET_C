@@ -10,29 +10,31 @@
 #include "service_orchestre.h"
 
 
-void unlock(int semid){
-  struct sembuf buf;
-  buf.sem_num = 0;
-  buf.sem_op = 1;
-  buf.sem_flg = SEM_UNDO;
-  int res = semop (semid, &buf, 1);
-  if (res == -1) {
-    perror("");
-  }else{
-    printf("unlocked\n");
-  }
-  assert(res != -1);
-}
+
 
 int main(int argc, char const *argv[]) {
+
   printf("%d\n", getpid());
 
-  printf("argv[3] = %s\n", argv[3] );
-  key_t key = ftok(argv[3], 123456);
-  
-  int semid = semget(key, 1, 0641);
+  for (size_t i = 0; i < argc; i++) {
+    printf("%s\n",argv[i]);
+  }
+
+  int fd = open("../SERVICES/S_C_0", O_RDWR);
+  assert(fd != -1);
+
+  printf("OPENED!!!!!!!!!!!!!!!!!\n");
+  key_t key = ftok("../SERVICES/S_C_0", PROJET_ID);
+  if (key == -1) {
+    perror("");
+    assert(key != -1);
+  }
+  int semid = semget(key, 1, 0660);
   printf("%d\n", semid);
-  assert(semid == atoi(argv[1]));
+  if (semid == -1) {
+    perror("");
+  }
+  assert(semid != -1);
   AnonymeTube anonymeTube;
   anonymeTube.fd[0] = atoi(argv[2]);
 
@@ -43,7 +45,7 @@ int main(int argc, char const *argv[]) {
   printf("mdp %d\n", tmp);
   sleep(20);
 
-  unlock(semid);
+  serviceUnlock(semid);
   printf("dead %d\n" , getpid());
   return 0;
 }
