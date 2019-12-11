@@ -10,12 +10,11 @@
 #include <unistd.h>
 
 
-//#include "config.h"
+#include "config.h"
 //#include "client_orchestre.h"
 #include "service_orchestre.h"
 
 #ifndef ORCHESTRE_CODES
-#define  NB_SERVICES 1
 #define CODE_ACCEPT 0
 #define CODE_FIN -2
 #endif
@@ -101,6 +100,8 @@ int main(int argc, char * argv[])
         usage(argv[0], "nombre paramètres incorrect");
 
     // lecture du fichier de configuration
+    config_init(argv[1]);
+
 
     // Pour la communication avec les clients
     // - création de 2 tubes nommés pour converser avec les clients
@@ -113,8 +114,9 @@ int main(int argc, char * argv[])
 
 
     // lancement des services, avec pour chaque service :
-    Service services[NB_SERVICES];
-    for (int i = 0; i < NB_SERVICES; i++) {
+    int nbServices = config_getNbServices();
+    Service services[nbServices];
+    for (int i = 0; i < nbServices; i++) {
       // - création de deux tubes nommés pour les communications entre
       //   les clients et le service
       createPipes(&(services[i]), i);
@@ -138,8 +140,11 @@ int main(int argc, char * argv[])
     }
 
     // lancement de chaque service
+    for (int i = 0; i < nbServices; i++) {
+      execFils(&services[i], config_getExeName(i));
+    }
     //execFils(&services[0],  "../SERVICES/service_compression" );
-    execFils(&services[0],  "../SERVICES/service_somme" );
+    //execFils(&services[1],  "../SERVICES/service_somme" );
     //execFils(&services[2],  "../SERVICES/service_max" );
 
     bool enUse[3];
@@ -151,7 +156,7 @@ int main(int argc, char * argv[])
         // détecter la fin des traitements lancés précédemment via
         // les sémaphores dédiés (attention on n'attend pas la
         // fin des traitement, on note juste ceux qui sont finis)
-        for (int i = 0; i < NB_SERVICES; i++) {
+        for (int i = 0; i < nbServices; i++) {
           int res = semctl(services[i].semid, 0, GETVAL);
           //si 0 est en cours d'execution
           if (res == 0) {
@@ -171,9 +176,7 @@ int main(int argc, char * argv[])
 
           //     sortie de la boucle
           break;
-        }else if(enUse[tmp]){
-          break;
-          //TODO
+        }else if(!config_isServiceOpen(tmp)){
           // sinon si service non ouvert
           //     retour d'un code d'erreur
 
@@ -181,7 +184,7 @@ int main(int argc, char * argv[])
           //TODO
           // sinon si service déjà en cours de traitement
           //     retour d'un code d'erreur
-
+          break;
         }else{
           // sinon
           //    Changer la valeur du semaphore
@@ -206,40 +209,38 @@ int main(int argc, char * argv[])
     }
 
     // attente de la fin des traitements en cours (via les sémaphores)
-    printf("waiting\n");
-    while (true) {
-      //c'est 1 si le service est libre
-      /*if (semctl(services[0].semid, 0, GETVAL) == 1 &&
-          semctl(services[1].semid, 0, GETVAL) == 1 &&
-          semctl(services[2].semid, 0, GETVAL) == 1) {
-        break;
-      }*/
-      if (semctl(services[0].semid, 0, GETVAL) == 1) {
-        break;
+    int cmpt = 0;
+    while(cmpt < nbServices){
+      //si un service finit, regarder si le prochain a fini aussi
+      if (semctl(services[cmpt].semid, 0, GETVAL) == 1) {
+        cmpt++;
+      }else{
+        //sleep pour ne pas chercher trop de fois si le service à fini
+        sleep(3);
       }
     }
 
     // envoi à chaque service d'un code de fin
     int code = CODE_FIN;
-    for (int i = 0; i < NB_SERVICES; i++) {
-      //si cette ligne posse de problemes avec valgrind, commenter alors
+    for (int i = 0; i < nbServices; i++) {
       orchestreWrite(&services[i].anonymeTube, &code, sizeof(int));
-
     }
 
     // attente de la terminaison des processus services
-    for (int i = 0; i < NB_SERVICES; i++) {
+    for (int i = 0; i < nbServices; i++) {
       wait(NULL);
     }
 
     // destruction des tubes
     //destruction de semaphores
-    for (int i = 0; i < NB_SERVICES; i++) {
+    for (int i = 0; i < nbServices; i++) {
       close(services[i].anonymeTube.fd[0]);
       int res = semctl(services[i].semid, 0, IPC_RMID);
       assert(res != -1);
       destroyPipe(&services[i]);
     }
 
+    //finir le API de config
+    config_exit();
     return EXIT_SUCCESS;
 }
