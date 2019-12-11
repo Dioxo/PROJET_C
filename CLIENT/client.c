@@ -12,7 +12,7 @@
 
 
 #include "client_orchestre.h"
-//#include "client_service.h"
+#include "client_service.h"
 
 #include "client_somme.h"
 #include "client_compression.h"
@@ -28,32 +28,62 @@ static void usage(const char *exeName, const char *message)
     exit(EXIT_FAILURE);
 }
 
-static void askConnection(Pair *pipes, Connection *c)
+static void askConnection(co_Pair *pipes, co_Connection *c)
 {
     co_clientWriteData(pipes, &(c->request), sizeof(int));
 }
 
-static int establishedConnection(Pair *pipes, Connection *c)
+static int establishedConnection(co_Pair *pipes, co_Connection *c)
 {
     co_clientReadData(pipes, &(c->request), sizeof(int));
     return c->request;
 }
 
-static void receive(Pair *pipes, Response *response)
+static void receive(co_Pair *pipes, co_Response *response)
 {
     co_clientReadData(pipes, &(response->password), sizeof(int));
-    co_clientReadData(pipes, &(response->lengthCtoO), sizeof(int));
-    co_clientReadData(pipes, &(response->lengthOtoC), sizeof(int));
-    response->CtoO = malloc((response->lengthCtoO) * sizeof(char));
-    response->OtoC = malloc((response->lengthOtoC) * sizeof(char));
-    co_clientReadData(pipes, response->CtoO, (response->lengthCtoO) * sizeof(char));
-    co_clientReadData(pipes, response->OtoC, (response->lengthCtoO) * sizeof(char));
+    co_clientReadData(pipes, &(response->lengthCtoS), sizeof(int));
+    co_clientReadData(pipes, &(response->lengthStoC), sizeof(int));
+    response->CtoS = malloc((response->lengthCtoS) * sizeof(char));
+    response->StoC = malloc((response->lengthStoC) * sizeof(char));
+    co_clientReadData(pipes, response->CtoS, (response->lengthCtoS) * sizeof(char));
+    co_clientReadData(pipes, response->StoC, (response->lengthStoC) * sizeof(char));
 }
 
-static void sendEOF(Pair *pipes)
+static void sendEOF(co_Pair *pipes)
 {
     int resquest = REQUEST_EOF;
     co_clientWriteData(pipes, &resquest, sizeof(int));
+}
+
+
+static void getNumbers(int argc, char *argv[])
+{
+	const int LENGTH = 10;
+    char n[LENGTH];
+    printf("Entrez un nombre : \n");
+    fgets(n, LENGTH-1, stdin);
+    strcpy(argv[argc-1],n);
+
+}
+
+static void getPath(int argc, char *argv[])
+{
+	const int LENGTH_PATH= 100;
+    char path[LENGTH_PATH];
+    printf("Entrez le chemin du fichier : \n");
+    fgets(path, LENGTH_PATH-1, stdin);
+    strcpy(argv[argc-1],path);
+
+}
+
+static void getThread(int argc, char *argv[])
+{
+	const int LENGTH_THREAD=5;
+    char thread[LENGTH_THREAD];
+    printf("Entrez le nombre de thread : \n");
+    fgets(thread, LENGTH_THREAD-1, stdin);
+    argv[argc-1] = thread;
 }
 
 int main(int argc, char * argv[])
@@ -64,10 +94,10 @@ int main(int argc, char * argv[])
     int numService = strtol(argv[1], NULL, 10);
     printf("%d\n", numService);
     // initialisations diverses
-    Pair pipes;
-    Connection connection;
-    Connection confirm;
-    Response response;
+    co_Pair pipes;
+    co_Connection connection;
+    co_Connection confirm;
+    co_Response response;
     co_clientOpenPipes("pipeClientToOrchestra","pipeOrchestraToClient", &pipes);
 
     // entrée en section critique pour communiquer avec l'orchestre
@@ -92,28 +122,57 @@ int main(int argc, char * argv[])
         //     récupération du mot de passe et des noms des 2 tubes
         printf("récupération du mot de passe et des noms des 2 tubes\n");
         receive(&pipes,&response); 
-
         //     envoi d'une accusé de réception à l'orchestre
-    //    connection.request = REQUEST_EOF;
-    //    sendEOF(&pipes, &connection);
         sendEOF(&pipes);
         //     sortie de la section critique
         //pthread_mutex_unlock(getMutex(numService));
         //     envoi du mot de passe au service
-        
-        //sendtoService(password);
+        Pair s_pipes;
+        printf("==================Passage au service=======================\n");
+        clientOpenPipes(response.StoC, response.CtoS , &s_pipes);
+     	clientWriteData(&s_pipes, &(response.password), sizeof(int));
         //     attente de l'accusé de réception du service
-        //S_response  = waitResponseService();
+        int ack;
+        clientReadData(&s_pipes, &ack, sizeof(int));
         //     appel de la fonction d'envoi des données (une fct par service)
-        //client_somme_sendData(/* tubes,*/ int argc, char * argv[]){}
-        //client_max_sendData(/* tubes,*/ int argc, char * argv[]){}
-        //void client_compression_sendData(/* tubes,*/ int argc, char * argv[]){}
+        int argc;
+        char **argv;
+        switch(numService)
+        {
+        	case 1:
+        	argc = 2;
+        	argv = (char **) malloc(argc * sizeof(char*)); 
+        	getNumbers(1, &argv[argc]);
+        	getNumbers(2, &argv[argc]);
+        	client_somme_sendData(&s_pipes, argc, &argv[argc]);
+        	client_somme_receiveResult(&s_pipes, argc, &argv[argc]);
+        	break;
+
+        	case 2:
+        	argc = 1;
+        	argv = (char **) malloc(argc * sizeof(char*)); 
+        	getPath(1, &argv[argc]);
+        	client_compression_sendData(&s_pipes, argc, &argv[argc]);
+        	client_compression_receiveResult(&s_pipes, argc, &argv[argc]);
+        	break;
+
+        	case 3:
+        	argc = 2;
+        	argv = (char **) malloc(argc * sizeof(char*));
+        	getThread(1, &argv[argc]);
+        	getPath(2, &argv[argc]);
+        	client_max_sendData(&s_pipes, argc, &argv[argc]);
+        	client_max_receiveResult(&s_pipes, argc, &argv[argc]);
+        	break;
+        }
+        free(*argv);	
         //     appel de la fonction de réception du résultat (une fct par service)
-        //void client_somme_receiveResult(/* tubes,*/ int argc, char * argv[]);
-        //void client_max_receiveResult(/* tubes,*/ int argc, char * argv[]);
-        //void client_compression_receiveResult(/* tubes,*/ int argc, char * argv[]);
+        
+
+
         //     envoi d'un accusé de réception au service
-       //sendtoService(acknowledgment);
+        int service_ack = SERVICE_EOF;
+        clientWriteData(&s_pipes, &service_ack, sizeof(int));
     //}
     // libération éventuelle de ressources
     }

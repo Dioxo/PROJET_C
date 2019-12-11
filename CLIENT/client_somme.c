@@ -5,6 +5,8 @@
 #include "client_service.h"
 #include "client_somme.h"
 
+#include "myassert.h"
+
 /*----------------------------------------------*
  * fonctions appelables par le client
  *----------------------------------------------*/
@@ -18,8 +20,15 @@
 
 
 
-void client_somme_sendData(/* tubes,*/ int argc, char * argv[])
+void client_somme_sendData(Pair *pipes, int argc, char * argv[])
 {
+
+	myassert(argc < 3,"nombre paramètres incorrect");
+	int a = atoi(argv[0]);
+	int b = atoi(argv[1]);
+	clientWriteData(pipes, &a, sizeof(int));
+	clientWriteData(pipes, &b, sizeof(int));
+
     // par exemple argv[2] et argv[3] contiennent les deux nombres
     // à envoyer (pour les sommer)
 }
@@ -29,8 +38,20 @@ void client_somme_sendData(/* tubes,*/ int argc, char * argv[])
 // - les tubes de communication
 // - argc et argv fournis au main
 // Cette fonction analyse argv pour savoir quoi faire des résultats
-void client_somme_receiveResult(/* tubes,*/ int argc, char * argv[])
+void client_somme_receiveResult(Pair *pipes, int argc, char * argv[])
 {
+	myassert(argc < 3,"nombre paramètres incorrect");
+	int max;
+	clientReadData(pipes, &max, sizeof(float));
+	printf("%s : %d", argv[4], max);
+}
     // par exemple on décide d'afficher le résultat et argv[4] contient
     // une chaine à afficher avant le résultat
+
+/*
+int main() 
+{
+
+  return EXIT_SUCCESS;
 }
+*/

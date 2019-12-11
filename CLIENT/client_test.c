@@ -5,20 +5,20 @@
 
 #include "client_orchestre.h"
 
-static void send(Pair *pipes, Response *response)
+static void send(co_Pair *pipes, co_Response *response)
 {
     co_orchestraWriteData(pipes, &(response->password), sizeof(int));
-    co_orchestraWriteData(pipes, &(response->lengthCtoO), sizeof(int));
-    co_orchestraWriteData(pipes, &(response->lengthOtoC), sizeof(int));
-    co_orchestraWriteData(pipes, response->CtoO, (response->lengthOtoC) * sizeof(char));
-    co_orchestraWriteData(pipes, response->CtoO, (response->lengthCtoO) * sizeof(char));
+    co_orchestraWriteData(pipes, &(response->lengthCtoS), sizeof(int));
+    co_orchestraWriteData(pipes, &(response->lengthStoC), sizeof(int));
+    co_orchestraWriteData(pipes, response->CtoS, (response->lengthStoC) * sizeof(char));
+    co_orchestraWriteData(pipes, response->CtoS, (response->lengthCtoS) * sizeof(char));
 }
 
 
 int main() {
-	Pair pipes;
-    Connection connection;
-    Response data;
+	co_Pair pipes;
+    co_Connection connection;
+    co_Response data;
 
 
     co_orchestraCreatePipes(&pipes);
@@ -28,17 +28,17 @@ int main() {
     printf("%d\n", connection.request);
 
     data.password  = 123456;
-    data.lengthCtoO = 8;
-    data.lengthOtoC = 8;
-    data.CtoO = "Totototo";
-    data.OtoC = "otototoT";
+    data.lengthCtoS = 8;
+    data.lengthStoC = 8;
+    data.CtoS = "Totototo";
+    data.StoC = "otototoT";
 
     
 
     if (connection.request != REQUEST_STOP)
     {
 
-    	Connection response = {REQUEST_ACCEPT};
+    	co_Connection response = {REQUEST_ACCEPT};
     	co_orchestraWriteData(&pipes, &response, sizeof(int));
         //
         printf("Orchestre receive : %d\n", connection.request);
