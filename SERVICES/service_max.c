@@ -9,7 +9,9 @@
 #include <fcntl.h>
 #include <string.h>
 
+#include "service_orchestre.h"
 #include "client_service.h"
+
 
 #ifndef SERVICE_MAX_CODES
 #define CODE_ACCEPT 0
@@ -162,7 +164,15 @@ int main(int argc, char * argv[])
         usage(argv[0], "nombre paramètres incorrect");
 
     // initialisations diverses
-    int fd_orchestre= atoi(argv[2]);
+    AnonymeTube anonymeTube;
+    anonymeTube.fd[0] = atoi(argv[2]);
+
+    //obtenir le semaphore
+    key_t key = ftok(argv[1], PROJET_ID);
+    int semid = semget(key, 1 , 660);
+    assert(semid != -1);
+
+
     Tableau tableau;
     int nbThreads = 0;
     float res;
@@ -177,13 +187,13 @@ int main(int argc, char * argv[])
     while (true)
     {
       // attente d'un code de l'orchestre (via tube anonyme)
-      read(fd_orchestre, &code, sizeof(int));
+      serviceRead(&anonymeTube, &code, sizeof(int));
 
       if(code == CODE_FIN){
         break;
       }else{
         //    réception du mot de passe de l'orchestre
-        read(fd_orchestre, &mdpOrchestre, sizeof(int));
+        serviceRead(&anonymeTube, &mdpOrchestre, sizeof(int));
 
         // attente du mot de passe du client
         serviceReadData(&pipes, &mdpClient,sizeof(int));
@@ -212,13 +222,13 @@ int main(int argc, char * argv[])
           free(tableau.tab);
         }
         //    modification du sémaphore pour prévenir l'orchestre de la fin
-        //pas encore implementé
+        serviceUnlock(semid);
 
       }
     }
 
     // libération éventuelle de ressources
-    close(fd_orchestre);
+    close(anonymeTube.fd[0]);
     serviceClosePipes(&pipes);
 
     return EXIT_SUCCESS;
