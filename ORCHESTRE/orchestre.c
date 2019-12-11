@@ -69,7 +69,6 @@ int main(int argc, char * argv[])
 
     // lancement des services, avec pour chaque service :
     Service services[NB_SERVICES];
-    char tmpName[18];
     for (int i = 0; i < NB_SERVICES; i++) {
       // - création de deux tubes nommés pour les communications entre
       //   les clients et le service
@@ -83,8 +82,7 @@ int main(int argc, char * argv[])
       // - un sémaphore pour que le service préviene l'orchestre de la
       //   fin d'un traitement
       //clé de chaque semaphore basé sur le nom "S_C_X"
-      sprintf(tmpName, "../SERVICES/S_C_%d", i);
-      services[i].key = ftok(tmpName, 123456);
+      services[i].key = ftok(services[i].s_c, 123456);
       assert(services[i].key != -1);
 
       // id de chaque semaphore
@@ -97,9 +95,9 @@ int main(int argc, char * argv[])
     }
 
     // lancement de chaque service
-    execFils(&services[0],  "./service_compression" );
-    execFils(&services[1],  "./service_somme" );
-    execFils(&services[2],  "./service_max" );
+    execFils(&services[0],  "../SERVICES/service_compression" );
+    execFils(&services[1],  "../SERVICES/service_somme" );
+    execFils(&services[2],  "../SERVICES/service_max" );
 
     bool enUse[3];
     while (true)
@@ -220,43 +218,33 @@ void execFils(Service *service, const char *nomExecutable){
 
 void createPipes(Service *service, int i){
   int nameLength;
-  nameLength = snprintf(NULL, 0, "S_C_%d", i) + 1;
+  nameLength = snprintf(NULL, 0, "../SERVICES/X_X_%d", i) + 1;
 
-  service->c_s = malloc(sizeof(int) * nameLength);
-  sprintf(service->c_s, "C_S_%d" , i);
+  service->c_s = malloc(sizeof(char) * nameLength);
+  sprintf(service->c_s, "../SERVICES/C_S_%d" , i);
 
-  service->s_c = malloc(sizeof(int) * nameLength);
-  sprintf(service->s_c, "S_C_%d" , i);
+  service->s_c = malloc(sizeof(char) * nameLength);
+  sprintf(service->s_c, "../SERVICES/S_C_%d" , i);
 
-  //variable suplementaire pour créer les tubes dans le dossier SERVICES
-  char *chaine = malloc(20 * sizeof(char));
-  sprintf(chaine, "../SERVICES/S_C_%d", i);
-  int res = mkfifo(chaine, 0644);
+  //creation tube c <=> s
+  int res = mkfifo(service->c_s, 0644);
   assert(res != -1);
 
-  sprintf(chaine, "../SERVICES/C_S_%d", i);
-  res = mkfifo(chaine, 0644);
+  //creation tube c <=> s
+  res = mkfifo(service->s_c, 0644);
   assert(res != -1);
-
-  free(chaine);
 }
 
 void destroyPipe(Service *service)
 {
-  //variable suplementaire pour aller vers le dossier SERVICES
-  char * chaine = malloc(20 * sizeof(char));
-  sprintf(chaine, "../SERVICES/%s", service->c_s);
 	int ret;
-  ret = unlink(chaine);
+  ret = unlink(service->c_s);
 	assert(ret == 0);
 	free(service->c_s);
 	service->c_s = NULL;
 
-  sprintf(chaine, "../SERVICES/%s", service->s_c);
-  ret = unlink(chaine);
+  ret = unlink(service->s_c);
   assert(ret == 0);
   free(service->s_c);
   service->s_c = NULL;
-
-  free(chaine);
 }
