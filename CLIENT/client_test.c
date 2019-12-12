@@ -33,8 +33,8 @@ int main() {
     printf("%d\n", connection.request);
 
     data.password  = 123456;
-    data.lengthCtoS = 8;
-    data.lengthStoC = 8;
+    data.lengthCtoS = 9;
+    data.lengthStoC = 9;
     data.CtoS = "Totototo";
     data.StoC = "otototoT";
 

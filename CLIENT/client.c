@@ -10,6 +10,7 @@
 #include "myassert.h"
 
 
+#define CODE_ACCEPT 0
 	
 #include "client_orchestre.h"
 #include "client_service.h"
@@ -18,7 +19,7 @@
 #include "client_compression.h"
 #include "client_max.h"
 
-/* Information : le préfixe co_ est présent pour différentier les méthodes et structure provenant 
+/* Information : Le préfixe co_ est présent pour différentier les méthodes et structure provenant 
 *  de client_orchestre.h et celle de client_service.h
 */
 
@@ -46,9 +47,14 @@ static int establishedConnection(co_Pair *pipes, co_Connection *c)
 //-------------------------------------------------------------
 static void receive(co_Pair *pipes, co_Response *response)
 {
+
+    printf("AVANT\n");
     co_clientReadData(pipes, &(response->password), sizeof(int));
+    printf("MDP\n");
     co_clientReadData(pipes, &(response->lengthCtoS), sizeof(int));
+    printf("T1\n");
     co_clientReadData(pipes, &(response->lengthStoC), sizeof(int));
+    printf("T2\n");
     response->CtoS = malloc((response->lengthCtoS) * sizeof(char));
     response->StoC = malloc((response->lengthStoC) * sizeof(char));
     co_clientReadData(pipes, response->CtoS, (response->lengthCtoS) * sizeof(char));
@@ -67,8 +73,8 @@ static void getNumbers(int argc ,char *argv[])
     char n[LENGTH];
     printf("Entrez un nombre : \n");
     fgets(n,LENGTH-1,stdin);
-    n[strlen(n)-1] = '\0';
-    argv[argc] = (char *) malloc ((strlen(n)) * sizeof(char)); 
+    n[strlen(n)] = '\0';
+    argv[argc] = (char *) malloc ((strlen(n) +1)* sizeof(char)); 
     strcpy(argv[argc],n);
 }
 //-------------------------------------------------------------
@@ -99,14 +105,10 @@ void cleanResponse(co_Response *response)
     free(response->CtoS);
     response->CtoS = NULL;
     response->lengthCtoS = 0;
-
     free(response->StoC);
     response->StoC = NULL;
     response->lengthStoC = 0;
-
     response->password=0;
-
-
 }
 
 
@@ -122,9 +124,8 @@ int main(int argc, char * argv[])
     co_Connection connection;
     co_Connection confirmation;
     co_Response response;
-    co_clientOpenPipes("pipeClientToOrchestra","pipeOrchestraToClient", &pipes);
+    co_clientOpenPipes("../ORCHESTRE/pipeClientToOrchestra","../ORCHESTRE/pipeOrchestraToClient", &pipes);
     Semaphore mutex = createSema(1);
-
     // entrée en section critique pour communiquer avec l'orchestre
     pSema(mutex);
     // envoi à l'orchestre du numéro du service
@@ -143,50 +144,56 @@ int main(int argc, char * argv[])
     {
         //     récupération du mot de passe et des noms des 2 tubes
         printf("récupération du mot de passe et des noms des 2 tubes\n");
-        receive(&pipes,&response); 
+        receive(&pipes,&response);
+        printf("receive\n"); 
         //     envoi d'une accusé de réception à l'orchestre
         sendEOF(&pipes);
+        printf("sendEOF\n");
         //     sortie de la section critique
         vSema(mutex);
+        printf("mutex\n");
         //     envoi du mot de passe au service
         Pair s_pipes;
         clientOpenPipes(response.StoC, response.CtoS , &s_pipes);
-     	clientWriteData(&s_pipes, &(response.password), sizeof(int));
+     	printf("open\n");
+        clientWriteData(&s_pipes, &(response.password), sizeof(int));
+        printf("write\n");
         //     attente de l'accusé de réception du service  (On peut simuler avec un cat < nomduTube)
         int ack;
         clientReadData(&s_pipes, &ack, sizeof(int));
         //     appel de la fonction d'envoi des données (une fct par service)
-        int argc;
-        char **argv;
+        int nbArgs = 0;
+        char **argument;
 
         switch(numService)
         {
+        	case 0:
+        	nbArgs = 3;
+        	argument = malloc(nbArgs * sizeof(char *)); 
+        	getNumbers(0,argument);
+        	getNumbers(1,argument);
+            argument[2] = malloc( (strlen("La somme vaut :") + 1) * sizeof(char));
+    	    strcpy(argument[2], "La somme vaut :");
+        	client_somme_sendData(&s_pipes, nbArgs, argument);
+        	client_somme_receiveResult(&s_pipes, nbArgs, argument);
+        	break;
+
         	case 1:
-        	argc = 3;
-        	argv = malloc(argc * sizeof(char *)); 
-        	getNumbers(0,argv);
-        	getNumbers(1,argv);
-        	argv[2] = "La somme vaut :";
-        	client_somme_sendData(&s_pipes, argc, argv);
-        	client_somme_receiveResult(&s_pipes, argc, argv);
+        	nbArgs = 2;
+        	argument = (char **) malloc(nbArgs * sizeof(char*)); 
+        	getPath(0,argument);
+            argument[1] = "result";
+        	client_compression_sendData(&s_pipes, nbArgs, argument);
+        	client_compression_receiveResult(&s_pipes, nbArgs, argument);
         	break;
 
         	case 2:
-        	argc = 2;
-        	argv = (char **) malloc(argc * sizeof(char*)); 
-        	getPath(0,argv);
-            argv[1] = "result";
-        	client_compression_sendData(&s_pipes, argc, argv);
-        	client_compression_receiveResult(&s_pipes, argc, argv);
-        	break;
-
-        	case 3:
-        	argc = 2;
-        	argv = (char **) malloc(argc * sizeof(char*));
-        	getThread(0,argv);
-        	getPath(1,argv);
-        	client_max_sendData(&s_pipes, argc, argv);
-        	client_max_receiveResult(&s_pipes, argc, argv);
+        	nbArgs = 2;
+        	argument = (char **) malloc(nbArgs * sizeof(char*));
+        	getThread(0,argument);
+        	getPath(1,argument);
+        	client_max_sendData(&s_pipes, nbArgs, argument);
+        	client_max_receiveResult(&s_pipes, nbArgs, argument);
         	break;
         }
 
@@ -196,17 +203,27 @@ int main(int argc, char * argv[])
         //     envoi d'un accusé de réception au service
         int service_ack = SERVICE_EOF;
         clientWriteData(&s_pipes, &service_ack, sizeof(int));
+
+
     // libération éventuelle de ressources
-        for (int i=0; i<argc; i++)
+        for (int i=0; i< nbArgs; i++)
         {
-            free(argv[i]);
-            argv[i]  = NULL;
+            free(argument[i]);
+            argument[i]  = NULL;
         }
-        free(*argv); 
+        free(argument); 
+        clientClosePipes(&s_pipes);
         cleanResponse(&response);
-        destroySema(&mutex);   
       
     }
+
+    //envoi à l'orchestre un code d'acceptation
+    connection.request = CODE_ACCEPT;
+    askConnection(&pipes, &connection);
+
+    co_orchestraClosePipes(&pipes);
+
+    destroySema(&mutex);    
     
     return EXIT_SUCCESS;
 }

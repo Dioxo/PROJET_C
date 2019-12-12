@@ -24,7 +24,7 @@ static int readData(int fd, float *data)
     int size = 1;
     while (sz > 0)
     {
-        data = (float *)realloc(data, size* sizeof(float));
+        data = (float *)realloc(data, size * sizeof(float));
         sz = read(fd, &data[size-1], sizeof(float));
         size += sz;
     }

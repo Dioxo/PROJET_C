@@ -183,7 +183,8 @@ int main(int argc, char * argv[])
     {
         // attente d'une demande de service du client
       co_orchestraReadData(&pipes, &(connection.request), sizeof(int));
-      int tmp = 0;
+      int tmp = connection.request;
+      printf("nbService = %d\n", tmp);
 
         // détecter la fin des traitements lancés précédemment via
         // les sémaphores dédiés (attention on n'attend pas la
@@ -204,9 +205,10 @@ int main(int argc, char * argv[])
 
         //analyse de la demande du client
         // si ordre de fin
+      printf("REQUEST STOP %d\n", REQUEST_STOP);
       if (connection.request == REQUEST_STOP)
       {
-        co_Connection response = {REQUEST_ACCEPT};
+        co_Connection response = {REQUEST_FAIL};
         //    retour d'un code d'acceptation
         co_orchestraWriteData(&pipes, &response, sizeof(int));
         //     sortie de la boucle
@@ -252,11 +254,14 @@ int main(int argc, char * argv[])
         data.password  = mdp;
 
         //     envoi des noms des tubes nommés au client (via le tube nommé)
-        data.CtoS = "Totototo";  // ?
-        data.StoC = "otototoT";  // ?
-        data.lengthCtoS = strlen(data.CtoS);
-        data.lengthStoC = strlen(data.StoC);
-        sendPassword(&pipes, &data);
+        //data.CtoS = "Totototo";  // ?
+        //data.StoC = "otototoT";  // ?
+        data.CtoS = services[tmp].c_s;
+        data.StoC = services[tmp].s_c;
+
+        data.lengthCtoS = strlen(data.CtoS) + 1;
+        data.lengthStoC = strlen(data.StoC) + 1;
+        sendTubePassword(&pipes, &data);
       }
       // attente d'un accusé de réception du client
       int ack;
@@ -265,6 +270,7 @@ int main(int argc, char * argv[])
 
     // attente de la fin des traitements en cours (via les sémaphores)
     int cmpt = 0;
+    printf("out bouche\n");
     while(cmpt < nbServices)
     {
       //si un service finit, regarder si le prochain a fini aussi
@@ -282,22 +288,28 @@ int main(int argc, char * argv[])
 
     // envoi à chaque service d'un code de fin
     int code = CODE_FIN;
+    printf("finir services\n");
     for (int i = 0; i < nbServices; i++)
     {
       orchestreWrite(&services[i].anonymeTube, &code, sizeof(int));
     }
 
     // attente de la terminaison des processus services
+    printf("wait\n");
     for (int i = 0; i < nbServices; i++)
     {
       wait(NULL);
     }
 
     // destruction des tubes
+    printf("destroy\n");      
     co_orchestraDestroyPipes(&pipes);
     //destruction de semaphores
+        printf("mutex\n");      
     destroySema(&mutex);
-    
+
+        printf("for\n");      
+
     for (int i = 0; i < nbServices; i++) 
     {
       close(services[i].anonymeTube.fd[0]);

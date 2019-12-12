@@ -207,8 +207,6 @@ Semaphore createSema(int val)
     key_t tok = token();
     self->semId = semget(tok, self->nbSem, IPC_CREAT | 0666);
     myassert(self->semId != -1, "Création du sémaphore");
-    printf("%d\n",self->semId);
-
     semctl(self->semId, 0, SETVAL, val);
     myassert(self->semId != -1, "Initiatisation du sémaphore");
 

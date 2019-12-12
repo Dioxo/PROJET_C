@@ -98,6 +98,21 @@ void compression_service_sendResult(Pair *pipes, const char *chaine)
 }
 
 
+static bool init = false;
+
+static void openP(Pair *pipes , char *s_c , char *c_s){
+
+	if(!init){
+		// ouverture de tube nommés
+		// communication services => client
+		// communication client => service
+
+		serviceOpenPipes(s_c, c_s, pipes);
+		init = true;
+	}
+}
+
+
 /*----------------------------------------------*
  * fonction main
  *----------------------------------------------*/
@@ -121,7 +136,6 @@ int main(int argc, char * argv[])
     // communication services => client
     // communication client => service
     Pair pipes;
-    serviceOpenPipes(argv[3], argv[4], &pipes);
 
 
     int mdpClient;
@@ -140,6 +154,7 @@ int main(int argc, char * argv[])
       }
       else
       {
+  	openP(&pipes, argv[3], argv[4]); 
         //    réception du mot de passe de l'orchestre
         serviceRead(&anonymeTube, &mdpOrchestre, sizeof(int));
 
@@ -180,6 +195,10 @@ int main(int argc, char * argv[])
 
     // libération éventuelle de ressources
     close(anonymeTube.fd[0]);
-    serviceClosePipes(&pipes);
+
+	// si le fichier a été ouvert
+	if(init){
+	    serviceClosePipes(&pipes);	
+	}
     return EXIT_SUCCESS;
 }
