@@ -1,3 +1,4 @@
+/* NOMS ET PRENOMS : HAYRAULT JULIEN - MOLINARES VALENCIA DIOGENES */
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
