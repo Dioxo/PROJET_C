@@ -19,6 +19,7 @@
 #define CODE_FIN -2
 #endif
 
+//---------------------------------------------------------------------------------
 static void usage(const char *exeName, const char *message)
 {
     fprintf(stderr, "usage : %s <fichier config>\n", exeName);
@@ -64,8 +65,10 @@ void execFils(Service *service, const char *nomExecutable)
     close(service->anonymeTube.fd[0]);
   }
 }
-//-------------------------------------------------------
-void createPipes(Service *service, int i){
+
+//---------------------------------------------------------------------------------
+void createPipes(Service *service, int i)
+{
   int nameLength;
   nameLength = snprintf(NULL, 0, "../SERVICES/X_X_%d", i) + 1;
 
@@ -82,7 +85,8 @@ void createPipes(Service *service, int i){
   res = mkfifo(service->c_s, 0644);
   assert(res != -1);
 }
-//-------------------------------------------------------
+
+//---------------------------------------------------------------------------------
 void destroyPipe(Service *service)
 {
 	int ret;
@@ -96,6 +100,7 @@ void destroyPipe(Service *service)
   free(service->s_c);
   service->s_c = NULL;
 }
+
 /* ===================================================================================
                           Instruction envoi vers client
    ===================================================================================   */ 
@@ -113,6 +118,7 @@ static void sendTubePassword(co_Pair *pipes, co_Response *response)
 /* ===================================================================================
                                     ORCHESTRE 
    ===================================================================================   */ 
+
 int main(int argc, char * argv[])
 {
     if (argc != 2)
@@ -139,7 +145,8 @@ int main(int argc, char * argv[])
     // lancement des services, avec pour chaque service :
     int nbServices = config_getNbServices();
     Service services[nbServices];
-    for (int i = 0; i < nbServices; i++) {
+    for (int i = 0; i < nbServices; i++)
+    {
       // - création de deux tubes nommés pour les communications entre
       //   les clients et le service
       createPipes(&(services[i]), i);
@@ -163,7 +170,8 @@ int main(int argc, char * argv[])
     }
 
     // lancement de chaque service
-    for (int i = 0; i < nbServices; i++) {
+    for (int i = 0; i < nbServices; i++)
+    {
       execFils(&services[i], config_getExeName(i));
     }
     //execFils(&services[0],  "../SERVICES/service_compression" );
@@ -196,65 +204,63 @@ int main(int argc, char * argv[])
 
         //analyse de la demande du client
         // si ordre de fin
-        if (connection.request == REQUEST_STOP)
-        {
-          co_Connection response = {REQUEST_ACCEPT};
-          //    retour d'un code d'acceptation
-          co_orchestraWriteData(&pipes, &response, sizeof(int));
-          //     sortie de la boucle
-          break;
-        }
-        else if(!config_isServiceOpen(tmp))
-        {
-          // sinon si service non ouvert
-          co_Connection response = {REQUEST_FAIL};
-          //     retour d'un code d'erreur
-          co_orchestraWriteData(&pipes, &response, sizeof(int));
+      if (connection.request == REQUEST_STOP)
+      {
+        co_Connection response = {REQUEST_ACCEPT};
+        //    retour d'un code d'acceptation
+        co_orchestraWriteData(&pipes, &response, sizeof(int));
+        //     sortie de la boucle
+        break;
+      }
+      else if(!config_isServiceOpen(tmp))
+      {
+      // sinon si service non ouvert
+        co_Connection response = {REQUEST_FAIL};
+        //     retour d'un code d'erreur
+        co_orchestraWriteData(&pipes, &response, sizeof(int));
+      }
 
-        }
-        else if (enUse[tmp]) 
-        {
-          // sinon si service déjà en cours de traitement
-          co_Connection response = {REQUEST_FAIL};
-          //     retour d'un code d'erreur
-          co_orchestraWriteData(&pipes, &response, sizeof(int));
-          break;
-        }
-        else
-        {
-          // sinon
-          //    Changer la valeur du semaphore
-          orchestreLock(services[tmp].semid);
-          //     génération d'un mot de passe
-          // mdp est entre [0 et 10000]
-          int mdp = (int)(rand() / (double)RAND_MAX * (10000 - 1));
+      else if (enUse[tmp]) 
+      {
+        // sinon si service déjà en cours de traitement
+        co_Connection response = {REQUEST_FAIL};
+        //     retour d'un code d'erreur
+        co_orchestraWriteData(&pipes, &response, sizeof(int));
+        break;
+      }
+      else
+      {
+        // sinon
+        //    Changer la valeur du semaphore
+        orchestreLock(services[tmp].semid);
+        //     génération d'un mot de passe
+        // mdp est entre [0 et 10000]
+        int mdp = (int)(rand() / (double)RAND_MAX * (10000 - 1));
 
-          //     envoi d'un code de travail au service (via le tube anonyme)
-          int code = CODE_ACCEPT;
-          orchestreWrite(&services[tmp].anonymeTube, &code, sizeof(int));
+        //     envoi d'un code de travail au service (via le tube anonyme)
+        int code = CODE_ACCEPT;
+        orchestreWrite(&services[tmp].anonymeTube, &code, sizeof(int));
 
-          //     envoi du mot de passe au service (via le tube anonyme)
-          orchestreWrite(&services[tmp].anonymeTube, &mdp, sizeof(int));
+        //     envoi du mot de passe au service (via le tube anonyme)
+        orchestreWrite(&services[tmp].anonymeTube, &mdp, sizeof(int));
 
-          //     envoi au client d'un code d'acceptation (via le tube nommé)
-          co_Connection response = {REQUEST_ACCEPT};
-          co_orchestraWriteData(&pipes, &response, sizeof(int));
+        //     envoi au client d'un code d'acceptation (via le tube nommé)
+        co_Connection response = {REQUEST_ACCEPT};
+        co_orchestraWriteData(&pipes, &response, sizeof(int));
 
-          //     envoi du mot de passe au client (via le tube nommé)
-          data.password  = mdp;
+        //     envoi du mot de passe au client (via le tube nommé)
+        data.password  = mdp;
 
-          //     envoi des noms des tubes nommés au client (via le tube nommé)
-          data.CtoS = "Totototo";  // ?
-          data.StoC = "otototoT";  // ?
-          data.lengthCtoS = strlen(data.CtoS);
-          data.lengthStoC = strlen(data.StoC);
-          sendPassword(&pipes, &data);
-
-
-        }
-        // attente d'un accusé de réception du client
-        int ack;
-        co_orchestraReadData(&pipes, &(ack), sizeof(int)); 
+        //     envoi des noms des tubes nommés au client (via le tube nommé)
+        data.CtoS = "Totototo";  // ?
+        data.StoC = "otototoT";  // ?
+        data.lengthCtoS = strlen(data.CtoS);
+        data.lengthStoC = strlen(data.StoC);
+        sendPassword(&pipes, &data);
+      }
+      // attente d'un accusé de réception du client
+      int ack;
+      co_orchestraReadData(&pipes, &(ack), sizeof(int)); 
     }
 
     // attente de la fin des traitements en cours (via les sémaphores)
@@ -262,6 +268,7 @@ int main(int argc, char * argv[])
     while(cmpt < nbServices)
     {
       //si un service finit, regarder si le prochain a fini aussi
+
       if (semctl(services[cmpt].semid, 0, GETVAL) == 1) 
       {
         cmpt++;
@@ -275,13 +282,13 @@ int main(int argc, char * argv[])
 
     // envoi à chaque service d'un code de fin
     int code = CODE_FIN;
-    for (int i = 0; i < nbServices; i++) 
+    for (int i = 0; i < nbServices; i++)
     {
       orchestreWrite(&services[i].anonymeTube, &code, sizeof(int));
     }
 
     // attente de la terminaison des processus services
-    for (int i = 0; i < nbServices; i++) 
+    for (int i = 0; i < nbServices; i++)
     {
       wait(NULL);
     }

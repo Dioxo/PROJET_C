@@ -95,9 +95,12 @@ int main(int argc, char * argv[])
       // attente d'un code de l'orchestre (via tube anonyme)
       serviceRead(&anonymeTube, &code, sizeof(int));
 
-      if(code == CODE_FIN){
+      if(code == CODE_FIN)
+      {
         break;
-      }else{
+      }
+      else
+      {
         //    réception du mot de passe de l'orchestre
         serviceRead(&anonymeTube, &mdpOrchestre, sizeof(int));
 
@@ -105,11 +108,14 @@ int main(int argc, char * argv[])
         serviceReadData(&pipes, &mdpClient,sizeof(int));
 
         //si mot de passe incorrect
-        if (mdpClient != mdpOrchestre) {
+        if (mdpClient != mdpOrchestre)
+        {
           // envoi au client d'un code d'erreur
           code = CODE_ERROR;
           serviceWriteData(&pipes, &code, sizeof(int) );
-        }else{
+        }
+        else
+        {
           // envoi au client d'un code d'acceptation
           code = CODE_ACCEPT;
           serviceWriteData(&pipes, &code, sizeof(int) );

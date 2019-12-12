@@ -53,9 +53,4 @@ void serviceWriteData(Pair *pipes, const void *buf, size_t size);
 void clientReadData(Pair *pipes, void *buf, size_t size);
 void serviceReadData(Pair *pipes, void *buf, size_t size);
 
-/* =================================
- 		Attente d'une réponse
-   =================================  */
-
-
 #endif

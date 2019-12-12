@@ -30,7 +30,8 @@ static void createPipe(const char *basename, int numService, NamedPipe *pipe)
 //---------------------------------------------------------------------------------
 void createPipes(int numService, Pair *pipes)
 {
-	if(!created){
+	if(!created)
+	{
 		createPipe("C_S", numService, &(pipes->C_S));
 		createPipe("S_C", numService, &(pipes->S_C));
 		created = true;
@@ -51,7 +52,8 @@ static void destroyPipe(NamedPipe *pipe)
 //---------------------------------------------------------------------------------
 void destroyPipes(Pair *pipes)
 {
-	if (!deleted) {
+	if (!deleted)
+	{
     destroyPipe(&(pipes->S_C));
     destroyPipe(&(pipes->C_S));
 		deleted = true;
@@ -98,9 +100,6 @@ static void closePipe(NamedPipe *pipe)
   free(pipe->name);
   pipe->name = NULL;
   ret = close(pipe->fd);
-	if (ret == -1) {
-		perror("ERROR : ");
-	}
   assert(ret == 0);
   pipe->fd = -1;
 }

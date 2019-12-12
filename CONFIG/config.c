@@ -45,9 +45,11 @@ static bool init = false;
 static bool configExit = false;
 Fichier fichier;
 
+//---------------------------------------------------------------------------------
 static void readFile(){
 
-  if(fscanf(fichier.file, "%d", &fichier.nbServices) != 1){
+  if(fscanf(fichier.file, "%d", &fichier.nbServices) != 1)
+  {
     perror("");
     exit(EXIT_FAILURE);
   }
@@ -61,13 +63,17 @@ static void readFile(){
 
   char * isOpen = malloc( MAX_LENGTH_OPEN );
   char * name = malloc( MAX_LENGTH_NAME );
-  for (int i = 0; i < fichier.nbServices; i++) {
+  for (int i = 0; i < fichier.nbServices; i++)
+  {
     //lire d'abord si le fichier est ouvert
-    if(fscanf(fichier.file, "%s", isOpen) != 1){
+    if(fscanf(fichier.file, "%s", isOpen) != 1)
+    {
       perror("");
       exit(EXIT_FAILURE);
     }
-    if (strcmp(isOpen, "ouvert") == 0) {
+
+    if (strcmp(isOpen, "ouvert") == 0)
+    {
       fichier.isOpen[i] = true;
     }else{
       fichier.isOpen[i] = false;
@@ -75,7 +81,8 @@ static void readFile(){
 
 
     //lire le nom du fichier
-    if(fscanf(fichier.file, "%s", name) != 1){
+    if(fscanf(fichier.file, "%s", name) != 1)
+    {
       perror("");
       exit(EXIT_FAILURE);
     }
@@ -87,9 +94,11 @@ static void readFile(){
   free(name);
 }
 
-
-static void closeFile(){
-  for (int i = 0; i < fichier.nbServices; i++) {
+//---------------------------------------------------------------------------------
+static void closeFile()
+{
+  for (int i = 0; i < fichier.nbServices; i++)
+  {
     free(fichier.services[i]);
   }
 
@@ -100,13 +109,16 @@ static void closeFile(){
 }
 
 
+//---------------------------------------------------------------------------------
 void config_init(const char *filename)
 {
     // TODO erreur si la fonction est appelée deux fois
-    if (init) {
+    if (init)
+    {
       exit(EXIT_INIT);
-    }else{
-      //init...
+    }
+    else
+    {
       fichier.file = fopen(filename, "r");
       assert(fichier.file != NULL);
       readFile();
@@ -117,21 +129,26 @@ void config_init(const char *filename)
     }
 }
 
+//---------------------------------------------------------------------------------
 void config_exit()
 {
     // TODO erreur si la fonction est appelée avant config_init
-    if (init && !configExit) {
+    if (init && !configExit)
+    {
         // on a reussi à appeler cette fonction une seule fois
         closeFile();
 
         //permettre appeler config_init une autre fois
         init = false;
         configExit = true;
-    }else{
+    }
+    else
+    {
       exit(EXIT_EXIT);
     }
 }
 
+//---------------------------------------------------------------------------------
 int config_getNbServices()
 {
     // erreur si la fonction est appelée avant config_init
@@ -147,36 +164,44 @@ int config_getNbServices()
     return fichier.nbServices;
 }
 
+//---------------------------------------------------------------------------------
 bool config_isServiceOpen(int pos)
 {
     // erreur si la fonction est appelée avant config_init
-    if (!init) {
+    if (!init)
+    {
       exit(EXIT_INIT);
     }
     // erreur si la fonction est appelée après config_exit
-    if (configExit) {
+    if (configExit)
+    {
       exit(EXIT_EXIT);
     }
     // TODO erreur si "pos" est incorrect
-    if (pos < 0 || pos > fichier.nbServices) {
+    if (pos < 0 || pos > fichier.nbServices)
+    {
       exit(EXIT_POS);
     }
 
     return fichier.isOpen[pos];
 }
 
+//---------------------------------------------------------------------------------
 const char * config_getExeName(int pos)
 {
   // erreur si la fonction est appelée avant config_init
-  if (!init) {
+  if (!init)
+  {
     exit(EXIT_INIT);
   }
   // erreur si la fonction est appelée après config_exit
-  if (configExit) {
+  if (configExit)
+  {
     exit(EXIT_EXIT);
   }
   // TODO erreur si "pos" est incorrect
-  if (pos < 0 || pos > fichier.nbServices) {
+  if (pos < 0 || pos > fichier.nbServices)
+  {
     exit(EXIT_POS);
   }
 

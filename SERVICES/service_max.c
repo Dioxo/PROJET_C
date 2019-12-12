@@ -59,15 +59,18 @@ void * codeThread(void * arg)
   ThreadData *data = (ThreadData *) arg;
   float max = data->tableau->tab[data->bInf];
 
-  for (int i = data->bInf + 1; i <= data->bSup; i++) {
-    if (max < data->tableau->tab[i]) {
+  for (int i = data->bInf + 1; i <= data->bSup; i++)
+  {
+    if (max < data->tableau->tab[i])
+    {
       max = data->tableau->tab[i];
     }
   }
 
   pthread_mutex_lock(data->mutex);
   printf("MAX LOCAL %f\n", max);
-  if ( *(data->res) < max ) {
+  if ( *(data->res) < max )
+  {
     *(data->res) = max;
   }
 
@@ -85,7 +88,8 @@ void max_service_receiveDataData(Pair *pipes, Tableau *tableau, int *nbThreads)
   //donner la taille du tableau à la structure
   tableau->taille = taille;
   tableau->tab = malloc(taille * sizeof(float));
-  for (int i = 0; i < taille; i++) {
+  for (int i = 0; i < taille; i++)
+  {
     //remplir le tableau
     serviceReadData(pipes, tableau->tab, sizeof(float));
     tableau->tab++;
@@ -189,9 +193,12 @@ int main(int argc, char * argv[])
       // attente d'un code de l'orchestre (via tube anonyme)
       serviceRead(&anonymeTube, &code, sizeof(int));
 
-      if(code == CODE_FIN){
+      if(code == CODE_FIN)
+      {
         break;
-      }else{
+      }
+      else
+      {
         //    réception du mot de passe de l'orchestre
         serviceRead(&anonymeTube, &mdpOrchestre, sizeof(int));
 
@@ -199,11 +206,14 @@ int main(int argc, char * argv[])
         serviceReadData(&pipes, &mdpClient,sizeof(int));
 
         //si mot de passe incorrect
-        if (mdpClient != mdpOrchestre) {
+        if (mdpClient != mdpOrchestre)
+        {
           // envoi au client d'un code d'erreur
           code = CODE_ERROR;
           serviceWriteData(&pipes, &code, sizeof(int) );
-        }else{
+        }
+        else
+        {
           // envoi au client d'un code d'acceptation
           code = CODE_ACCEPT;
           serviceWriteData(&pipes, &code, sizeof(int) );

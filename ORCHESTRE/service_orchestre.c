@@ -9,7 +9,14 @@
 
 #include "service_orchestre.h"
 
-void serviceUnlock(int semid){
+
+//===================================================
+//     FONCTIONS À UTILISER AVEC LES SEMAPHORES
+//===================================================
+
+//---------------------------------------------------------------------------------
+void serviceUnlock(int semid)
+{
   struct sembuf buf;
   buf.sem_num = 0;
   buf.sem_op = 1;
@@ -18,7 +25,10 @@ void serviceUnlock(int semid){
   assert(res != -1);
 }
 
-void orchestreLock(int semid){
+
+//---------------------------------------------------------------------------------
+void orchestreLock(int semid)
+{
   struct sembuf buf;
   buf.sem_num = 0;
   buf.sem_op = -1;
@@ -27,9 +37,20 @@ void orchestreLock(int semid){
   assert(res != -1);
 }
 
-void orchestreWrite(AnonymeTube *anonyme, const void *buf, size_t size){
+//===================================================
+//           ENVOI DES DONNÉES ORCHESTRE => CLIENT
+//===================================================
+
+
+//---------------------------------------------------------------------------------
+void orchestreWrite(AnonymeTube *anonyme, const void *buf, size_t size)
+{
   write(anonyme->fd[1], buf , size);
 }
-void serviceRead(AnonymeTube *anonyme, void *buf, size_t size){
+
+
+//---------------------------------------------------------------------------------
+void serviceRead(AnonymeTube *anonyme, void *buf, size_t size)
+{
   read(anonyme->fd[0], buf , size);
 }
