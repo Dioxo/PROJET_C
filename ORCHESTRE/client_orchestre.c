@@ -1,3 +1,4 @@
+/* NOMS ET PRENOMS : HAYRAULT JULIEN - MOLINARES VALENCIA DIOGENES */
 #define _POSIX_C_SOURCE 200809L    // pour strdup
 
 #include <stdio.h>
