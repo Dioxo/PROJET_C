@@ -48,11 +48,13 @@ int main() {
     	co_Connection response = {REQUEST_ACCEPT};
     	co_orchestraWriteData(&pipes, &response, sizeof(int));
         //
-        printf("Orchestre receive : %d\n", connection.request);
+        
+        printf("Orchestre receive : %d\n", connection.request);  
         send(&pipes, &data);
         int ack;
-        co_orchestraReadData(&pipes, &(ack), sizeof(int)); 
+        co_orchestraReadData(&pipes, &(ack), sizeof(int));   
         printf("Accusé de reception : %d\n", ack);
+        
     }
     else
     {
@@ -60,7 +62,9 @@ int main() {
     	
 
     }
-    //co_orchestraDestroyPipes(&pipes);
+    pSema(mutex);
+    vSema(mutex);
+    co_orchestraDestroyPipes(&pipes);
    
 
     

@@ -45,7 +45,7 @@ void client_somme_receiveResult(Pair *pipes, int argc, char * argv[])
 	myassert(argc == 3,"nombre paramètres incorrect");
 	int sum;
 	clientReadData(pipes, &sum, sizeof(int));
-	printf("%s %d\n", argv[3], sum);
+	printf("%s %d\n", argv[2], sum);
 }
     // par exemple on décide d'afficher le résultat et argv[4] contient
     // une chaine à afficher avant le résultat

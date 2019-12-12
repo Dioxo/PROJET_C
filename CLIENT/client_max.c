@@ -16,20 +16,19 @@
 // - les tubes de communication
 // - argc et argv fournis au main
 // Cette fonction analyse argv et en déduit les données à envoyer
-static int getsize(int fd)
+
+
+static int readData(int fd, float *data)
 {
 	int sz;
-	char *f;
-	while ((sz = read(fd, &f, sizeof(float))) > 0);
-	return sz;	
-}
-
-static void readData(int fd, int size, float data[])
-{
-	for(int i = 0; i<size; i++)
-	{
-		read(fd, &data[i], sizeof(float)); 
-	}
+    int size = 1;
+    while (sz > 0)
+    {
+        data = (float *)realloc(data, size* sizeof(float));
+        sz = read(fd, &data[size-1], sizeof(float));
+        size += sz;
+    }
+    return size-1;
 }
 
 
@@ -43,9 +42,8 @@ void client_max_sendData(Pair *pipes, int argc, char * argv[])
 
 	fd = open(argv[2], O_RDONLY | O_CREAT, 0644);
 	myassert(fd == -1 ,"ouverture impossible");
-	int size = getsize(fd);
-	float data[size];
-	readData(fd, size, data);
+	float *data = (float *)malloc(sizeof(float));
+	int size = readData(fd, data);
 	close(fd);
 
 

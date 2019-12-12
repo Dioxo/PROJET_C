@@ -11,7 +11,7 @@
 
 
 #include "config.h"
-//#include "client_orchestre.h"
+#include "client_orchestre.h"
 #include "service_orchestre.h"
 
 #ifndef ORCHESTRE_CODES
@@ -35,10 +35,14 @@ typedef struct {
   int semid;
 } Service;
 
-
-
-void execFils(Service *service, const char *nomExecutable){
-  if (fork() == 0) {
+/* ===================================================================================
+                          Instruction envoi vers Service
+   ===================================================================================   */ 
+//-------------------------------------------------------
+void execFils(Service *service, const char *nomExecutable)
+{
+  if (fork() == 0) 
+  {
     //fermer le tube en ecriture pour le service
     close(service->anonymeTube.fd[1]);
 
@@ -53,13 +57,14 @@ void execFils(Service *service, const char *nomExecutable){
                                                 NULL);
 
     assert(res != -1);
-  }else{
+  }
+  else
+  {
     //fermer le tube en lecture pour l'orchestre
     close(service->anonymeTube.fd[0]);
   }
 }
-
-
+//-------------------------------------------------------
 void createPipes(Service *service, int i){
   int nameLength;
   nameLength = snprintf(NULL, 0, "../SERVICES/X_X_%d", i) + 1;
@@ -77,7 +82,7 @@ void createPipes(Service *service, int i){
   res = mkfifo(service->c_s, 0644);
   assert(res != -1);
 }
-
+//-------------------------------------------------------
 void destroyPipe(Service *service)
 {
 	int ret;
@@ -91,9 +96,23 @@ void destroyPipe(Service *service)
   free(service->s_c);
   service->s_c = NULL;
 }
-
-
+/* ===================================================================================
+                          Instruction envoi vers client
+   ===================================================================================   */ 
 //-------------------------------------------------------
+static void sendTubePassword(co_Pair *pipes, co_Response *response)
+{
+    co_orchestraWriteData(pipes, &(response->password), sizeof(int));
+    co_orchestraWriteData(pipes, &(response->lengthCtoS), sizeof(int));
+    co_orchestraWriteData(pipes, &(response->lengthStoC), sizeof(int));
+    co_orchestraWriteData(pipes, response->CtoS, (response->lengthStoC) * sizeof(char));
+    co_orchestraWriteData(pipes, response->CtoS, (response->lengthCtoS) * sizeof(char));
+}
+//-------------------------------------------------------
+
+/* ===================================================================================
+                                    ORCHESTRE 
+   ===================================================================================   */ 
 int main(int argc, char * argv[])
 {
     if (argc != 2)
@@ -105,12 +124,16 @@ int main(int argc, char * argv[])
 
     // Pour la communication avec les clients
     // - création de 2 tubes nommés pour converser avec les clients
-    /*
-    Pair pipes;
-    orchestraCreatePipes(argv[1], Pair *pipes);
-    */
+    co_Pair pipes;
+    co_orchestraCreatePipes(&pipes);
+    co_orchestraOpenPipes("pipeClientToOrchestra","pipeOrchestraToClient", &pipes);
     // - création d'un sémaphore pour que deux clients ne
     //   ne communiquent pas en même temps avec l'orchestre
+    Semaphore mutex;
+    mutex = createSema(1);
+
+    co_Connection connection;
+    co_Response data;
 
 
     // lancement des services, avec pour chaque service :
@@ -151,41 +174,54 @@ int main(int argc, char * argv[])
     while (true)
     {
         // attente d'une demande de service du client
-        int tmp = 0;
+      co_orchestraReadData(&pipes, &(connection.request), sizeof(int));
+      int tmp = 0;
 
         // détecter la fin des traitements lancés précédemment via
         // les sémaphores dédiés (attention on n'attend pas la
         // fin des traitement, on note juste ceux qui sont finis)
-        for (int i = 0; i < nbServices; i++) {
-          int res = semctl(services[i].semid, 0, GETVAL);
-          //si 0 est en cours d'execution
-          if (res == 0) {
-            enUse[i] = true;
-          }else{
-            enUse[i] = false;
-          }
+      for (int i = 0; i < nbServices; i++) 
+      {
+        int res = semctl(services[i].semid, 0, GETVAL);
+        //si 0 est en cours d'execution
+        if (res == 0) 
+        {
+          enUse[i] = true;
         }
+        else
+        {
+          enUse[i] = false;
+        }
+      }
 
-        //TODO analyse de la demande du client
-
+        //analyse de la demande du client
         // si ordre de fin
-        if (tmp == CODE_FIN) {
-          //TODO
-
+        if (connection.request == REQUEST_STOP)
+        {
+          co_Connection response = {REQUEST_ACCEPT};
           //    retour d'un code d'acceptation
-
+          co_orchestraWriteData(&pipes, &response, sizeof(int));
           //     sortie de la boucle
           break;
-        }else if(!config_isServiceOpen(tmp)){
+        }
+        else if(!config_isServiceOpen(tmp))
+        {
           // sinon si service non ouvert
+          co_Connection response = {REQUEST_FAIL};
           //     retour d'un code d'erreur
+          co_orchestraWriteData(&pipes, &response, sizeof(int));
 
-        }else if (enUse[tmp]) {
-          //TODO
+        }
+        else if (enUse[tmp]) 
+        {
           // sinon si service déjà en cours de traitement
+          co_Connection response = {REQUEST_FAIL};
           //     retour d'un code d'erreur
+          co_orchestraWriteData(&pipes, &response, sizeof(int));
           break;
-        }else{
+        }
+        else
+        {
           // sinon
           //    Changer la valeur du semaphore
           orchestreLock(services[tmp].semid);
@@ -200,21 +236,38 @@ int main(int argc, char * argv[])
           //     envoi du mot de passe au service (via le tube anonyme)
           orchestreWrite(&services[tmp].anonymeTube, &mdp, sizeof(int));
 
-            // TODO
           //     envoi au client d'un code d'acceptation (via le tube nommé)
+          co_Connection response = {REQUEST_ACCEPT};
+          co_orchestraWriteData(&pipes, &response, sizeof(int));
+
           //     envoi du mot de passe au client (via le tube nommé)
+          data.password  = mdp;
+
           //     envoi des noms des tubes nommés au client (via le tube nommé)
+          data.CtoS = "Totototo";  // ?
+          data.StoC = "otototoT";  // ?
+          data.lengthCtoS = strlen(data.CtoS);
+          data.lengthStoC = strlen(data.StoC);
+          sendPassword(&pipes, &data);
+
+
         }
         // attente d'un accusé de réception du client
+        int ack;
+        co_orchestraReadData(&pipes, &(ack), sizeof(int)); 
     }
 
     // attente de la fin des traitements en cours (via les sémaphores)
     int cmpt = 0;
-    while(cmpt < nbServices){
+    while(cmpt < nbServices)
+    {
       //si un service finit, regarder si le prochain a fini aussi
-      if (semctl(services[cmpt].semid, 0, GETVAL) == 1) {
+      if (semctl(services[cmpt].semid, 0, GETVAL) == 1) 
+      {
         cmpt++;
-      }else{
+      }
+      else
+      {
         //sleep pour ne pas chercher trop de fois si le service à fini
         sleep(3);
       }
@@ -222,18 +275,24 @@ int main(int argc, char * argv[])
 
     // envoi à chaque service d'un code de fin
     int code = CODE_FIN;
-    for (int i = 0; i < nbServices; i++) {
+    for (int i = 0; i < nbServices; i++) 
+    {
       orchestreWrite(&services[i].anonymeTube, &code, sizeof(int));
     }
 
     // attente de la terminaison des processus services
-    for (int i = 0; i < nbServices; i++) {
+    for (int i = 0; i < nbServices; i++) 
+    {
       wait(NULL);
     }
 
     // destruction des tubes
+    co_orchestraDestroyPipes(&pipes);
     //destruction de semaphores
-    for (int i = 0; i < nbServices; i++) {
+    destroySema(&mutex);
+    
+    for (int i = 0; i < nbServices; i++) 
+    {
       close(services[i].anonymeTube.fd[0]);
       int res = semctl(services[i].semid, 0, IPC_RMID);
       assert(res != -1);

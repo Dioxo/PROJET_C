@@ -203,12 +203,13 @@ static key_t token()
 Semaphore createSema(int val)
 {
     Semaphore self = malloc(sizeof(struct SemaphoreP));
-    self->NbSem =1;
+    self->nbSem =1;
     key_t tok = token();
-    self->semId = semget(tok, self->nbSem, IPC_CREAT | 0641);
+    self->semId = semget(tok, self->nbSem, IPC_CREAT | 0666);
     myassert(self->semId != -1, "Création du sémaphore");
+    printf("%d\n",self->semId);
 
-    int ret = semctl(self->semId, 0, SETVAL, val);
+    semctl(self->semId, 0, SETVAL, val);
     myassert(self->semId != -1, "Initiatisation du sémaphore");
 
     return self;
@@ -251,7 +252,7 @@ void vSema(Semaphore self)
 //--------------------------------------------------------------------------------
 void pSema(Semaphore self)
 {
-    int ret = OperationSema(self,0 -1);
+    int ret = OperationSema(self, 0, -1);
     myassert(ret != -1, "Erreur : -1 sur le semaphore");
 }
 //--------------------------------------------------------------------------------

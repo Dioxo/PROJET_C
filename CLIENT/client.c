@@ -18,6 +18,11 @@
 #include "client_compression.h"
 #include "client_max.h"
 
+/* Information : le préfixe co_ est présent pour différentier les méthodes et structure provenant 
+*  de client_orchestre.h et celle de client_service.h
+*/
+
+
 
 static void usage(const char *exeName, const char *message)
 {
@@ -27,18 +32,18 @@ static void usage(const char *exeName, const char *message)
         fprintf(stderr, "message : %s\n", message);
     exit(EXIT_FAILURE);
 }
-
+//-------------------------------------------------------------
 static void askConnection(co_Pair *pipes, co_Connection *c)
 {
     co_clientWriteData(pipes, &(c->request), sizeof(int));
 }
-
+//-------------------------------------------------------------
 static int establishedConnection(co_Pair *pipes, co_Connection *c)
 {
     co_clientReadData(pipes, &(c->request), sizeof(int));
     return c->request;
 }
-
+//-------------------------------------------------------------
 static void receive(co_Pair *pipes, co_Response *response)
 {
     co_clientReadData(pipes, &(response->password), sizeof(int));
@@ -49,14 +54,13 @@ static void receive(co_Pair *pipes, co_Response *response)
     co_clientReadData(pipes, response->CtoS, (response->lengthCtoS) * sizeof(char));
     co_clientReadData(pipes, response->StoC, (response->lengthStoC) * sizeof(char));
 }
-
+//-------------------------------------------------------------
 static void sendEOF(co_Pair *pipes)
 {
     int resquest = REQUEST_EOF;
     co_clientWriteData(pipes, &resquest, sizeof(int));
 }
-
-
+//-------------------------------------------------------------
 static void getNumbers(int argc ,char *argv[])
 {
 	const int LENGTH = 10;
@@ -67,7 +71,7 @@ static void getNumbers(int argc ,char *argv[])
     argv[argc] = (char *) malloc ((strlen(n)) * sizeof(char)); 
     strcpy(argv[argc],n);
 }
-
+//-------------------------------------------------------------
 static void getPath(int argc ,char *argv[])
 {
 	const int LENGTH_PATH= 100;
@@ -75,11 +79,10 @@ static void getPath(int argc ,char *argv[])
     printf("Entrez le chemin du fichier : \n");
     fgets(path, LENGTH_PATH-1, stdin);
     path[strlen(path)-1] = '\0';
-    argv[argc] = (char *) malloc ((strlen(path)) * sizeof(char)); 
+    argv[argc] = (char *) malloc ((strlen(path) + 1) * sizeof(char)); 
     strcpy(argv[argc],path);
-
 }
-
+//-------------------------------------------------------------
 static void getThread(int argc ,char *argv[])
 {
 	const int LENGTH_THREAD=5;
@@ -90,6 +93,7 @@ static void getThread(int argc ,char *argv[])
     argv[argc] = (char *) malloc ((strlen(thread)) * sizeof(char)); 
     strcpy(argv[argc],thread);
 }
+//-------------------------------------------------------------
 
 int main(int argc, char * argv[])
 {
@@ -101,7 +105,7 @@ int main(int argc, char * argv[])
     // initialisations diverses
     co_Pair pipes;
     co_Connection connection;
-    co_Connection confirm;
+    co_Connection confirmation;
     co_Response response;
     co_clientOpenPipes("pipeClientToOrchestra","pipeOrchestraToClient", &pipes);
     Semaphore mutex = createSema(1);
@@ -112,8 +116,7 @@ int main(int argc, char * argv[])
     connection.request = numService;
     askConnection(&pipes, &connection);
     // attente code de retour
-    int resp = establishedConnection(&pipes, &confirm);
-    printf("%d\n", resp); 
+    int resp = establishedConnection(&pipes, &confirmation); 
     // si code d'erreur
     if (resp == REQUEST_FAIL)
     {
@@ -135,12 +138,13 @@ int main(int argc, char * argv[])
         Pair s_pipes;
         clientOpenPipes(response.StoC, response.CtoS , &s_pipes);
      	clientWriteData(&s_pipes, &(response.password), sizeof(int));
-        //     attente de l'accusé de réception du service
+        //     attente de l'accusé de réception du service  (On peut simuler avec un cat < nomduTube)
         int ack;
         clientReadData(&s_pipes, &ack, sizeof(int));
         //     appel de la fonction d'envoi des données (une fct par service)
         int argc;
         char **argv;
+
         switch(numService)
         {
         	case 1:
@@ -148,15 +152,16 @@ int main(int argc, char * argv[])
         	argv = malloc(argc * sizeof(char *)); 
         	getNumbers(0,argv);
         	getNumbers(1,argv);
-        	argv[3] = "La somme vaut :";
+        	argv[2] = "La somme vaut :";
         	client_somme_sendData(&s_pipes, argc, argv);
         	client_somme_receiveResult(&s_pipes, argc, argv);
         	break;
 
         	case 2:
-        	argc = 1;
+        	argc = 2;
         	argv = (char **) malloc(argc * sizeof(char*)); 
         	getPath(0,argv);
+            argv[1] = "result";
         	client_compression_sendData(&s_pipes, argc, argv);
         	client_compression_receiveResult(&s_pipes, argc, argv);
         	break;

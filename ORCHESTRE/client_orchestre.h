@@ -13,7 +13,7 @@
 
 
 #define MON_FICHIER "client_orchestre.h"
-#define MON_ID 5;
+#define MON_ID 5
 
 typedef struct 
 {
@@ -50,7 +50,6 @@ typedef struct
    ============================   */ 
 
 void co_orchestraCreatePipes(co_Pair *pipes);
-void co_orchestraCreateThread(co_Pair *pipes);
 
 void co_orchestraDestroyPipes(co_Pair *pipes);
 
