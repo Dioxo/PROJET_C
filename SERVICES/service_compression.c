@@ -154,9 +154,11 @@ int main(int argc, char * argv[])
       }
       else
       {
-  	openP(&pipes, argv[3], argv[4]); 
+
         //    réception du mot de passe de l'orchestre
         serviceRead(&anonymeTube, &mdpOrchestre, sizeof(int));
+
+  	openP(&pipes, argv[3], argv[4]); 
 
         // attente du mot de passe du client
         serviceReadData(&pipes, &mdpClient,sizeof(int));

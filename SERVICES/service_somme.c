@@ -49,7 +49,6 @@ void somme_service_computeResult(float *a, float *b, float *res)
 // fonction d'envoi du résultat
 void somme_service_sendResult(Pair *pipes, float *res)
 {
-  printf("result somme %f", *res);
   serviceWriteData(pipes,res, sizeof(float));
 }
 
@@ -84,7 +83,6 @@ int main(int argc, char * argv[])
     if (argc != 5)
         usage(argv[0], "nombre paramètres incorrect");
 
-    printf("SERVICE SOMME \n");
     // initialisations diverses
     AnonymeTube anonymeTube;
     anonymeTube.fd[0] = atoi(argv[2]);
@@ -106,20 +104,18 @@ int main(int argc, char * argv[])
     while (true)
     {
       // attente d'un code de l'orchestre (via tube anonyme)
-      	printf("waiting for code ");
       serviceRead(&anonymeTube, &code, sizeof(int));
 
-	printf("code %d" , code);
       if(code == CODE_FIN)
       {
         break;
       }
       else
       {
-      	openP(&pipes, argv[3], argv[4]); 
         //    réception du mot de passe de l'orchestre
         serviceRead(&anonymeTube, &mdpOrchestre, sizeof(int));
 
+      	openP(&pipes, argv[3], argv[4]); 
         // attente du mot de passe du client
         serviceReadData(&pipes, &mdpClient,sizeof(int));
 

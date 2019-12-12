@@ -145,19 +145,14 @@ int main(int argc, char * argv[])
         //     récupération du mot de passe et des noms des 2 tubes
         printf("récupération du mot de passe et des noms des 2 tubes\n");
         receive(&pipes,&response);
-        printf("receive\n"); 
         //     envoi d'une accusé de réception à l'orchestre
         sendEOF(&pipes);
-        printf("sendEOF\n");
         //     sortie de la section critique
         vSema(mutex);
-        printf("mutex\n");
         //     envoi du mot de passe au service
         Pair s_pipes;
         clientOpenPipes(response.StoC, response.CtoS , &s_pipes);
-     	printf("open\n");
         clientWriteData(&s_pipes, &(response.password), sizeof(int));
-        printf("write\n");
         //     attente de l'accusé de réception du service  (On peut simuler avec un cat < nomduTube)
         int ack;
         clientReadData(&s_pipes, &ack, sizeof(int));
