@@ -94,6 +94,21 @@ static void getThread(int argc ,char *argv[])
     strcpy(argv[argc],thread);
 }
 //-------------------------------------------------------------
+void cleanResponse(co_Response *response)
+{
+    free(response->CtoS);
+    response->CtoS = NULL;
+    response->lengthCtoS = 0;
+
+    free(response->StoC);
+    response->StoC = NULL;
+    response->lengthStoC = 0;
+
+    response->password=0;
+
+
+}
+
 
 int main(int argc, char * argv[])
 {
@@ -122,7 +137,6 @@ int main(int argc, char * argv[])
     {
         //     sortie de la section critique
         vSema(mutex);
-
     }
     // sinon
     else
@@ -175,16 +189,23 @@ int main(int argc, char * argv[])
         	client_max_receiveResult(&s_pipes, argc, argv);
         	break;
         }
-        free(*argv);	
-        //     appel de la fonction de réception du résultat (une fct par service)
+
+
         
-
-
+        //     appel de la fonction de réception du résultat (une fct par service)
         //     envoi d'un accusé de réception au service
         int service_ack = SERVICE_EOF;
         clientWriteData(&s_pipes, &service_ack, sizeof(int));
-    //}
     // libération éventuelle de ressources
+        for (int i=0; i<argc; i++)
+        {
+            free(argv[i]);
+            argv[i]  = NULL;
+        }
+        free(*argv); 
+        cleanResponse(&response);
+        destroySema(&mutex);   
+      
     }
     
     return EXIT_SUCCESS;
