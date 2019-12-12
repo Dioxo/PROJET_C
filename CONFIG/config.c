@@ -1,3 +1,4 @@
+/* NOMS ET PRENOMS : HAYRAULT JULIEN - MOLINARES VALENCIA DIOGENES */
 /*
  * Indications (à respecter) :
  * - Les erreurs sont gérées avec des assert ; les erreurs traitées sont :

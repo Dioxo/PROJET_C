@@ -1,3 +1,4 @@
+/* NOMS ET PRENOMS : HAYRAULT JULIEN - MOLINARES VALENCIA DIOGENES
 /*
  * Ce fichier ne fait pas partie du projet, il sert juste à
  * tester la gestion du fichier de configuration
